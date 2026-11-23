@@ -57,3 +57,16 @@
 .srp-ai:hover { filter: brightness(1.06); }
 .srp-ai:disabled { opacity: .65; cursor: default; }
 .srp-ai-err { font-size: 12px; color: var(--color-critical); }
+
+.bmd-workspace { width: 100%; max-width: 900px; margin-inline: auto; }
+.bmd-workspace h1, .bmd-workspace h2 { margin-bottom: var(--space-2); }
+.bmd-actions { flex-wrap: wrap; }
+.bmd-url { overflow-wrap: anywhere; color: var(--text-secondary); margin-bottom: var(--space-1); }
+.bmd-snippet { max-width: 60ch; overflow-wrap: anywhere; }
+.bmd-snippet-title { color: var(--accent); font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+.bmd-snippet-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

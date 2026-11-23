@@ -15,6 +15,7 @@ import { SiteGraph } from './components/site-graph.js';
 import { PublicAudit } from './components/public-audit.js';
 import { ResourcesView } from './components/resources-view.js';
 import { SerpView } from './components/serp-view.js';
+import { mountBatchDescriptions } from './components/batch-descriptions.js';
 import { AgenticView } from './components/agentic-view.js';
 import { IntegrationsPanel } from './components/integrations-panel.js';
 import { Drawer } from './components/drawer.js';
@@ -248,6 +249,12 @@ document.getElementById('nav-btn-public').addEventListener('click', () => {
   window.publicAudit?.refresh();
 });
 
+document.getElementById('nav-btn-batch-descriptions').addEventListener('click', event => {
+  document.querySelectorAll('.global-nav .nav-icon').forEach(icon => icon.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  switchProjectView('view-batch-descriptions');
+});
+
 document.querySelectorAll('.project-nav .tab').forEach(tab => {
   tab.addEventListener('click', (e) => {
     switchProjectView(e.target.dataset.target);
@@ -358,6 +365,7 @@ const resourcesView = new ResourcesView(document.getElementById('resources-conta
 
 // SERP mode — pixel-width measurement of the crawl's titles/descriptions.
 const serpView = new SerpView(document.getElementById('serp-container'), API_BASE);
+mountBatchDescriptions(document.getElementById('batch-descriptions-container'), API_BASE);
 // Origin-level agentic readiness (components/agentic-view.js).
 const agenticView = new AgenticView(document.getElementById('agentic-container'),
                                     { apiBase: API_BASE });
