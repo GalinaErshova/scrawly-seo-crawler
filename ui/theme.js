@@ -10,6 +10,8 @@
 // components never re-render. We still emit a `themechange` event for any code
 // that needs to read computed token values (e.g. D3 charts reading CSS vars).
 
+import { t } from './i18n.js';
+
 const KEY = 'scrawly-theme';
 const root = document.documentElement;
 const mql = window.matchMedia('(prefers-color-scheme: dark)');
@@ -63,12 +65,12 @@ export function createThemeToggle() {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'icon-btn theme-toggle';
-  btn.setAttribute('aria-label', 'Toggle color theme');
+  btn.setAttribute('aria-label', t('Toggle color theme'));
 
   const paint = () => {
     const dark = resolvedTheme() === 'dark';
     btn.innerHTML = dark ? MOON : SUN;
-    btn.title = dark ? 'Dark theme. Switch to light' : 'Light theme. Switch to dark';
+    btn.title = dark ? t('Dark theme. Switch to light') : t('Light theme. Switch to dark');
   };
 
   btn.addEventListener('click', toggleTheme);

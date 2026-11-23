@@ -62,6 +62,13 @@ A Scrawly window opens and you're ready. Click the Scrawly logo, paste any web a
 and start an audit. When it finishes, the **Reports** tab opens the report in your browser
 or saves it as a PDF (you choose where).
 
+### Interface language
+
+Choose **Settings → Language → Русский** for the Russian interface. Choose
+**Настройки → Язык → English** to switch back. Scrawly remembers the selection
+and reloads the interface. Crawled content, generated report files and free-text
+results from the audit engine or an AI provider keep their original language.
+
 ## 3. Updates
 
 Every time Scrawly opens it checks GitHub for a new version. When there is one, it updates

@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/serp-view.js
 // Titles & descriptions. Two lenses on the same text:
 //   1. Google display: measured in pixels (Google cuts on render width, not
@@ -23,12 +24,9 @@ export class SerpView {
 
   _shell() {
     this.el.innerHTML = `
-      <h1 style="margin-bottom:4px;">Titles &amp; descriptions</h1>
+      <h1 style="margin-bottom:4px;">${t("Titles & descriptions")}</h1>
       <p style="margin-bottom:var(--space-3); max-width:70ch;">
-        Your title and description are the first things Google and AI assistants read about a page.
-        We check that your title fits on Google, and that your description gives AI enough detail to
-        understand and recommend your page. Use <b>Write with AI</b> to draft a stronger version from
-        the page's own content.</p>
+        ${t("Your title and description are the first things Google and AI assistants read about a page. We check that your title fits on Google, and that your description gives AI enough detail to understand and recommend your page.")} ${t("Use Write with AI to draft a stronger version from the page's own content.")}</p>
       <div class="srp-stats"></div>
       <div class="srp-filters"></div>
       <div class="srp-list"></div>`;
@@ -114,7 +112,7 @@ export class SerpView {
     const btn = card?.querySelector('.srp-ai');
     const errEl = card?.querySelector('.srp-ai-err');
     if (errEl) errEl.textContent = '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Writing…'; }
+    if (btn) { btn.disabled = true; btn.textContent = t("Writing…"); }
     try {
       const r = await fetch(`${this.api}/serp/generate`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -123,20 +121,20 @@ export class SerpView {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) {
         const detail = d.detail;
-        throw new Error((detail && detail.message) || (typeof detail === 'string' ? detail : 'Could not write this one.'));
+        throw new Error((detail && detail.message) || (typeof detail === 'string' ? detail : t("Could not write this one.")));
       }
       this.rows[i] = d;   // the endpoint returns a fully measured row
       this._recount();
       this._render();
     } catch (e) {
-      if (btn) { btn.disabled = false; btn.textContent = '✨ Write with AI'; }
+      if (btn) { btn.disabled = false; btn.textContent = t("✨ Write with AI"); }
       if (errEl) errEl.textContent = e.message;
     }
   }
 
   _render() {
     const s = this.summary;
-    const chip = (label, v, cls = '') => `<span class="chip-stat ${cls}">${v ?? 0}<small>${label}</small></span>`;
+    const chip = (label, v, cls = '') => `<span class="chip-stat ${cls}">${v ?? 0}<small>${t(label)}</small></span>`;
     this.el.querySelector('.srp-stats').innerHTML =
       chip('pages', s.total) +
       chip('titles too long for Google', s.title_truncated, s.title_truncated ? 'danger' : '') +
@@ -148,7 +146,7 @@ export class SerpView {
     };
     this.el.querySelector('.srp-filters').innerHTML = ['all', 'attention']
       .map(f => `<button class="pill${f === this.filter ? ' active' : ''}${f === 'attention' && counts.attention ? ' danger' : ''}" data-f="${f}">
-        ${f === 'all' ? 'All pages' : 'Needs attention'} <span class="pill-n">${counts[f]}</span></button>`).join('');
+        ${f === 'all' ? t("All pages") : t("Needs attention")} <span class="pill-n">${counts[f]}</span></button>`).join('');
     this.el.querySelectorAll('.srp-filters .pill').forEach(b => b.addEventListener('click', () => {
       this.filter = b.dataset.f; this._render();
     }));
@@ -167,31 +165,31 @@ export class SerpView {
       <div class="srp-card${r.ai_generated ? ' srp-ai-done' : ''}" data-i="${i}">
         <div class="srp-card-top">
           <div class="srp-url mono">${esc(pathOf(r.url))}</div>
-          ${r.ai_generated ? '<span class="srp-ai-tag">✨ AI draft</span>' : ''}
+          ${r.ai_generated ? `<span class="srp-ai-tag">${t("✨ AI draft")}</span>` : ''}
         </div>
         <div class="srp-field">
-          <label>Title <span class="srp-chars">${r.title_chars} characters</span></label>
+          <label>${t("Title")} <span class="srp-chars">${t("{count} characters", { count: r.title_chars })}</span></label>
           <input class="srp-in srp-title ${r.title_truncated ? 'bad' : ''}" value="${esc(r.title)}">
           ${bar(r.title_px, r.title_limit_px, r.title_truncated)}
           <div class="srp-note${r.title_truncated ? ' bad' : ''}">${r.title_truncated
-            ? 'Google may cut this title off. Shorten it so it shows in full.'
-            : 'Fits on Google.'}</div>
+            ? t("Google may cut this title off. Shorten it so it shows in full.")
+            : t("Fits on Google.")}</div>
         </div>
         <div class="srp-field">
-          <label>Description <span class="srp-chars">${r.desc_chars} characters</span></label>
+          <label>${t("Description")} <span class="srp-chars">${t("{count} characters", { count: r.desc_chars })}</span></label>
           <textarea class="srp-in srp-desc ${r.desc_ai_thin ? 'warn' : ''}" rows="3">${esc(r.description)}</textarea>
           <div class="srp-note${r.desc_ai_thin ? ' warn' : ''}">${r.desc_ai_thin
-            ? 'Too thin for AI. Add the key details (what the page offers, the main names and topics) so AI can understand and recommend it.'
-            : 'Good detail for AI. Google shows the first part; the full text still helps AI understand the page.'}</div>
+            ? t("Too thin for AI. Add the key details (what the page offers, the main names and topics) so AI can understand and recommend it.")
+            : t("Good detail for AI. Google shows the first part; the full text still helps AI understand the page.")}</div>
         </div>
         <div class="srp-actions">
-          <button class="srp-ai" type="button">✨ Write with AI</button>
+          <button class="srp-ai" type="button">${t("✨ Write with AI")}</button>
           <span class="srp-ai-err"></span>
         </div>
       </div>`).join('')
       : `<p style="color:var(--text-secondary);">${this.rows.length
-          ? 'Every page looks good.'
-          : 'No pages to show for this audit yet.'}</p>`;
+          ? t("Every page looks good.")
+          : t("No pages to show for this audit yet.")}</p>`;
 
     // Re-measure on blur; wire the AI writer.
     this.el.querySelectorAll('.srp-card').forEach(card => {

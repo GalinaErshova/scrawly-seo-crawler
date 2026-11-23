@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/crawl-console.js
 // A persistent, global live-crawl console. Mounted once at app root (outside the
 // view sections) so it survives navigation between screens. Streams real crawl
@@ -17,8 +18,11 @@ const hostOf = (u) => { try { return new URL(u).host; } catch { return u; } };
 const pathOf = (u) => { try { const x = new URL(u); return (x.pathname + x.search) || '/'; } catch { return u; } };
 
 export function formatCrawlProgress(status) {
-  if (status.discovered == null) return `${status.url_count ?? 0} pages`;
-  return `${status.processed ?? status.crawled ?? status.url_count ?? 0} processed · ${status.discovered} discovered`;
+  if (status.discovered == null) return t("{count} pages", { count: status.url_count ?? 0 });
+  return t("{processed} processed · {discovered} discovered", {
+    processed: status.processed ?? status.crawled ?? status.url_count ?? 0,
+    discovered: status.discovered,
+  });
 }
 
 export function isPartialCrawl(status) {
@@ -43,48 +47,48 @@ export class CrawlConsole {
     el.id = 'crawl-console';
     el.className = 'cc hidden';
     el.innerHTML = `
-      <button class="cc-pill" type="button" aria-label="Show crawl console">
+      <button class="cc-pill" type="button" aria-label="${t("Show crawl console")}">
         <span class="cc-pill-dot"></span>
-        <span class="cc-pill-label">Crawling</span>
+        <span class="cc-pill-label">${t("Crawling")}</span>
         <span class="cc-pill-pct">0%</span>
       </button>
-      <div class="cc-panel" role="dialog" aria-label="Live crawl console">
+      <div class="cc-panel" role="dialog" aria-label="${t("Live crawl console")}">
         <header class="cc-head">
           <div class="cc-head-main">
-            <span class="cc-live"><span class="cc-live-dot"></span> LIVE</span>
-            <span class="cc-target">Crawl</span>
+            <span class="cc-live"><span class="cc-live-dot"></span> ${t("LIVE")}</span>
+            <span class="cc-target">${t("Crawl")}</span>
           </div>
           <div class="cc-head-actions">
-            <button class="cc-min" type="button" title="Minimize" aria-label="Minimize">–</button>
-            <button class="cc-close" type="button" title="Hide" aria-label="Hide">✕</button>
+            <button class="cc-min" type="button" title="${t("Minimize")}" aria-label="${t("Minimize")}">–</button>
+            <button class="cc-close" type="button" title="${t("Hide")}" aria-label="${t("Hide")}">✕</button>
           </div>
         </header>
 
-        <div class="cc-phase"><span class="cc-phase-label">Starting…</span><span class="cc-elapsed"></span></div>
+        <div class="cc-phase"><span class="cc-phase-label">${t("Starting…")}</span><span class="cc-elapsed"></span></div>
         <div class="cc-bar"><div class="cc-bar-fill" style="width:0%"></div></div>
 
         <div class="cc-metrics">
-          <div class="cc-metric"><div class="cc-metric-val" data-k="processed">0</div><div class="cc-metric-label">Processed</div></div>
-          <div class="cc-metric"><div class="cc-metric-val" data-k="discovered">0</div><div class="cc-metric-label">Discovered</div></div>
-          <div class="cc-metric"><div class="cc-metric-val" data-k="queue">0</div><div class="cc-metric-label">Queued</div></div>
-          <div class="cc-metric"><div class="cc-metric-val" data-k="pps">0</div><div class="cc-metric-label">Pages/s</div></div>
+          <div class="cc-metric"><div class="cc-metric-val" data-k="processed">0</div><div class="cc-metric-label">${t("Processed")}</div></div>
+          <div class="cc-metric"><div class="cc-metric-val" data-k="discovered">0</div><div class="cc-metric-label">${t("Discovered")}</div></div>
+          <div class="cc-metric"><div class="cc-metric-val" data-k="queue">0</div><div class="cc-metric-label">${t("Queued")}</div></div>
+          <div class="cc-metric"><div class="cc-metric-val" data-k="pps">0</div><div class="cc-metric-label">${t("Pages/s")}</div></div>
         </div>
 
         <div class="cc-tally"></div>
 
-        <div class="cc-section-label">Now crawling</div>
+        <div class="cc-section-label">${t("Now crawling")}</div>
         <ul class="cc-active"></ul>
 
-        <div class="cc-section-label">Recently crawled</div>
+        <div class="cc-section-label">${t("Recently crawled")}</div>
         <ul class="cc-recent"></ul>
 
         <div class="cc-done hidden">
           <div class="cc-done-check">✓</div>
-          <div class="cc-done-text">Crawl complete</div>
+          <div class="cc-done-text">${t("Crawl complete")}</div>
         </div>
         <div class="cc-actions" hidden>
-          <button class="cc-view btn btn-secondary" type="button">View saved pages</button>
-          <button class="cc-resume btn btn-primary" type="button">Resume audit</button>
+          <button class="cc-view btn btn-secondary" type="button">${t("View saved pages")}</button>
+          <button class="cc-resume btn btn-primary" type="button">${t("Resume audit")}</button>
         </div>
       </div>`;
     document.body.appendChild(el);
@@ -111,8 +115,8 @@ export class CrawlConsole {
     this.el.querySelector('.cc-done').classList.add('hidden');
     this.el.querySelector('.cc-panel').classList.remove('cc-complete');
     this.el.querySelector('.cc-actions').hidden = true;
-    this.el.querySelector('.cc-pill-label').textContent = 'Crawling';
-    this.el.querySelector('.cc-target').textContent = 'Crawl';
+    this.el.querySelector('.cc-pill-label').textContent = t("Crawling");
+    this.el.querySelector('.cc-target').textContent = t("Crawl");
     this._render({ status: 'Starting…' });
     if (this.timer) clearTimeout(this.timer);
     this._poll();
@@ -162,9 +166,10 @@ export class CrawlConsole {
       crawl: 'Finding and crawling pages', enrich: 'Adding Google data',
       store: 'Saving results', audit: 'Checking your pages',
       complete: 'Complete', failed: 'Crawl stopped', interrupted: 'Crawl interrupted',
+      agentic: 'Checking AI-agent readiness…',
     }[s.phase] || (s.status === 'Unknown' ? 'Waiting…' : (s.status || ''));
-    $('.cc-phase-label').textContent = phaseLabel;
-    $('.cc-elapsed').textContent = s.elapsed_s != null ? `${s.elapsed_s}s` : '';
+    $('.cc-phase-label').textContent = t(phaseLabel);
+    $('.cc-elapsed').textContent = s.elapsed_s != null ? t("{seconds}s", { seconds: s.elapsed_s }) : '';
 
     const set = (k, v) => { const n = el.querySelector(`[data-k="${k}"]`); if (n) n.textContent = v; };
     set('processed', s.processed ?? s.crawled ?? 0);
@@ -178,15 +183,15 @@ export class CrawlConsole {
     const order = [['2xx', 's2'], ['3xx', 's3'], ['4xx', 's4'], ['5xx', 's5'], ['err', 'err']];
     $('.cc-tally').innerHTML = order
       .filter(([k]) => tally[k])
-      .map(([k, cls]) => `<span class="cc-chip cc-${cls}">${tally[k]} ${k}</span>`)
-      .join('') || '<span class="cc-chip cc-muted">no responses yet</span>';
+      .map(([k, cls]) => `<span class="cc-chip cc-${cls}">${tally[k]} ${t(k)}</span>`)
+      .join('') || `<span class="cc-chip cc-muted">${t("no responses yet")}</span>`;
 
     // Now crawling (in-flight)
     const active = s.active || [];
     $('.cc-active').innerHTML = active.length
       ? active.slice(0, 8).map(u =>
           `<li class="cc-active-item"><span class="cc-spin"></span><span class="cc-url mono">${esc(pathOf(u))}</span></li>`).join('')
-      : '<li class="cc-empty">idle…</li>';
+      : `<li class="cc-empty">${t("idle…")}</li>`;
 
     // Recent feed (newest first), staggered entrance
     const recent = s.recent || [];
@@ -194,8 +199,8 @@ export class CrawlConsole {
       `<li class="cc-recent-item" style="--i:${i}">
          <span class="cc-code cc-${STATUS_CLASS(r.status)}">${esc(r.status || ' - ')}</span>
          <span class="cc-url mono" title="${esc(r.url)}">${esc(pathOf(r.url))}</span>
-         <span class="cc-depth" title="Clicks from the start page">depth ${esc(r.depth)}</span>
-       </li>`).join('') || '<li class="cc-empty">waiting for first page…</li>';
+         <span class="cc-depth" title="${t("Clicks from the start page")}">${t("depth {depth}", { depth: esc(r.depth) })}</span>
+       </li>`).join('') || `<li class="cc-empty">${t("waiting for first page…")}</li>`;
   }
 
   _renderDone() {
@@ -203,19 +208,19 @@ export class CrawlConsole {
     el.querySelector('.cc-bar-fill').style.width = '100%';
     el.querySelector('.cc-panel').classList.add('cc-complete');
     el.querySelector('.cc-done').classList.remove('hidden');
-    el.querySelector('.cc-phase-label').textContent = 'Complete';
-    el.querySelector('.cc-pill-label').textContent = 'Complete';
+    el.querySelector('.cc-phase-label').textContent = t("Complete");
+    el.querySelector('.cc-pill-label').textContent = t("Complete");
     this.partial = false;
     this._setActions(true, false);
     this._setMin(false);
-    toast.show('Crawl complete. Your results are ready.', 'success');
+    toast.show(t("Crawl complete. Your results are ready."), 'success');
     if (this._onComplete) { const cb = this._onComplete; this._onComplete = null; cb(this.crawlId); }
   }
 
   _setActions(view, resume) {
     const actions = this.el.querySelector('.cc-actions');
     const viewButton = actions.querySelector('.cc-view');
-    viewButton.textContent = this.partial ? 'View saved pages' : 'View results →';
+    viewButton.textContent = this.partial ? t("View saved pages") : t("View results →");
     viewButton.hidden = !view;
     actions.querySelector('.cc-resume').hidden = !resume;
     actions.hidden = !view && !resume;
@@ -223,10 +228,10 @@ export class CrawlConsole {
 
   _renderStopped(s) {
     const el = this.el;
-    el.querySelector('.cc-phase-label').textContent = 'Crawl interrupted';
-    el.querySelector('.cc-pill-label').textContent = 'Interrupted';
+    el.querySelector('.cc-phase-label').textContent = t("Crawl interrupted");
+    el.querySelector('.cc-pill-label').textContent = t("Interrupted");
     this.onStopped(this.crawlId);
-    toast.show(s.resumable ? 'The crawl stopped. You can resume this audit.'
-      : 'The crawl stopped before the audit completed.', 'warning');
+    toast.show(s.resumable ? t("The crawl stopped. You can resume this audit.")
+      : t("The crawl stopped before the audit completed."), 'warning');
   }
 }

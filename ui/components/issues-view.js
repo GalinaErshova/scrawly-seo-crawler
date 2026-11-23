@@ -1,3 +1,4 @@
+import { locale, t } from '../i18n.js';
 // ui/components/issues-view.js — Issues & Audits, rebuilt around triage.
 //
 // The question this view has to answer is "what do I fix first?", and the old
@@ -16,6 +17,7 @@ const SEV_VAR = {
   Medium: 'var(--color-warning)', Low: 'var(--color-notice)',
   Info: 'var(--border-color)',
 };
+const pagesPlural = new Intl.PluralRules(locale);
 const cls = (s) => `sev-${String(s || 'info').toLowerCase()}`;
 
 // Impact score: severity is the primary key, breadth the tiebreaker. A Critical
@@ -86,7 +88,7 @@ export class IssuesView {
   _mixBar(list) {
     const c = this._sevCounts(list);
     const total = list.length || 1;
-    return `<span class="iss-mix" title="${SEV_ORDER.filter(s => c[s]).map(s => `${c[s]} ${s}`).join(', ')}">` +
+    return `<span class="iss-mix" title="${SEV_ORDER.filter(s => c[s]).map(s => `${c[s]} ${t(s)}`).join(', ')}">` +
       SEV_ORDER.filter(s => c[s]).map(s =>
         `<i style="width:${(c[s] / total) * 100}%;background:${SEV_VAR[s]}"></i>`).join('') +
       '</span>';
@@ -94,29 +96,30 @@ export class IssuesView {
 
   _row(i) {
     const n = i.affected_url_ids.length;
+    const pageLabel = { one: 'page', few: 'pages (few)' }[pagesPlural.select(n)] || 'pages';
     const fixed = this.hooks.fixedCount ? this.hooks.fixedCount(i) : 0;
     const isOpen = this.open.has(i.id);
     const canFix = this.hooks.canFix && this.hooks.canFix();
     return `<div class="iss-row ${isOpen ? 'is-open' : ''}" data-id="${i.id}">
       <span class="iss-bar ${cls(i.severity)}"></span>
-      <span class="iss-sevlab ${cls(i.severity)}">${esc(i.severity)}</span>
+      <span class="iss-sevlab ${cls(i.severity)}">${esc(t(i.severity))}</span>
       <div class="iss-main">
         <div class="iss-title" title="${esc(i.title)}">${esc(i.title)}</div>
-        <div class="iss-why">${esc(i.why_it_matters || i.domain || '')}</div>
+        <div class="iss-why">${esc(i.why_it_matters || t(i.domain || ''))}</div>
       </div>
       <div class="iss-impact">
         <div class="iss-impact-n">${n}</div>
-        <div class="iss-impact-l">page${n === 1 ? '' : 's'}</div>
+        <div class="iss-impact-l">${t(pageLabel)}</div>
       </div>
       <div class="iss-actions">
         ${fixed > 0
-          ? `<button class="btn btn-secondary iss-fixed" data-id="${i.id}">✓ Fixed ${fixed}</button>`
+          ? `<button class="btn btn-secondary iss-fixed" data-id="${i.id}">${t("✓ Fixed {count}", { count: fixed })}</button>`
           : (canFix && i.tier !== 'FLAG'
-            ? `<button class="btn btn-primary iss-fix" data-id="${i.id}">Fix</button>` : '')}
-        <button class="btn btn-secondary iss-copy iss-secondary" data-id="${i.id}">Copy prompt</button>
-        <button class="btn btn-secondary iss-pages iss-secondary" data-id="${i.id}">Pages</button>
+            ? `<button class="btn btn-primary iss-fix" data-id="${i.id}">${t("Fix")}</button>` : '')}
+        <button class="btn btn-secondary iss-copy iss-secondary" data-id="${i.id}">${t("Copy prompt")}</button>
+        <button class="btn btn-secondary iss-pages iss-secondary" data-id="${i.id}">${t("Pages")}</button>
         <button class="btn btn-secondary iss-more" data-id="${i.id}"
-                aria-expanded="${isOpen}" title="Details">${isOpen ? '▴' : '▾'}</button>
+                aria-expanded="${isOpen}" title="${t("Details")}">${isOpen ? '▴' : '▾'}</button>
       </div>
       ${isOpen ? this._detail(i) : ''}
     </div>`;
@@ -131,14 +134,14 @@ export class IssuesView {
           .join(' · ')
       : '';
     const tierNote = {
-      AUTO: 'Scrawly can apply this automatically on a connected site.',
-      REVIEW: 'Needs a human decision before it is applied.',
-      FLAG: 'Report-only - never auto-applied.',
+      AUTO: t("Scrawly can apply this automatically on a connected site."),
+      REVIEW: t("Needs a human decision before it is applied."),
+      FLAG: t("Report-only - never auto-applied."),
     }[i.tier] || '';
     return `<div class="iss-detail">
-      ${i.recommended_fix ? `<div class="iss-detail-row"><b>Recommended fix</b>${esc(i.recommended_fix)}</div>` : ''}
-      ${i.why_it_matters ? `<div class="iss-detail-row"><b>Why it matters</b>${esc(i.why_it_matters)}</div>` : ''}
-      ${ev ? `<div class="iss-detail-row"><b>Evidence</b><span class="iss-ev mono">${ev}</span></div>` : ''}
+      ${i.recommended_fix ? `<div class="iss-detail-row"><b>${t("Recommended fix")}</b>${esc(i.recommended_fix)}</div>` : ''}
+      ${i.why_it_matters ? `<div class="iss-detail-row"><b>${t("Why it matters")}</b>${esc(i.why_it_matters)}</div>` : ''}
+      ${ev ? `<div class="iss-detail-row"><b>${t("Evidence")}</b><span class="iss-ev mono">${ev}</span></div>` : ''}
       <div class="iss-tier">
         ${tierNote ? `<span>${esc(tierNote)}</span>` : ''}
       </div>
@@ -167,22 +170,21 @@ export class IssuesView {
       <div class="iss">
         <div class="iss-head">
           <div>
-            <h1>Issues &amp; Audits</h1>
-            <p class="iss-sub">${this.issues.length} finding${this.issues.length === 1 ? '' : 's'}
-               across ${cats.length} area${cats.length === 1 ? '' : 's'} - sorted by impact.</p>
+            <h1>${t("Issues & Audits")}</h1>
+            <p class="iss-sub">${t("{count} findings across {areas} areas", { count: this.issues.length, areas: cats.length })}. ${t("Sorted by impact.")}</p>
           </div>
           <div class="iss-sevs">
             ${SEV_ORDER.filter(s => counts[s]).map(s => `
               <button class="iss-sev ${cls(s)} ${this.sevFilter.has(s) ? 'is-on' : ''}"
                       data-sev="${s}" aria-pressed="${this.sevFilter.has(s)}">
                 <span class="dot" style="background:${SEV_VAR[s]}"></span>
-                <span class="n">${counts[s]}</span> ${s}
+                <span class="n">${counts[s]}</span> ${t(s)}
               </button>`).join('')}
           </div>
         </div>
 
         ${top.length ? `<div class="card iss-triage">
-          <span class="iss-triage-h">Start here</span>
+          <span class="iss-triage-h">${t("Start here")}</span>
           <div class="iss-triage-list">
             ${top.map(i => `<span class="iss-triage-item" data-jump="${i.id}">
               <span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${SEV_VAR[i.severity]}"></span>
@@ -192,28 +194,28 @@ export class IssuesView {
         </div>` : ''}
 
         <div class="iss-tools">
-          <input class="iss-search" type="search" placeholder="Search findings, checks or areas…"
-                 value="${esc(this.query)}" aria-label="Search findings">
-          <label class="iss-sort">Sort
+          <input class="iss-search" type="search" placeholder="${t("Search findings, checks or areas…")}"
+                 value="${esc(this.query)}" aria-label="${t("Search findings")}">
+          <label class="iss-sort">${t("Sort")}
             <select class="iss-sort-sel">
-              <option value="impact"${this.sort === 'impact' ? ' selected' : ''}>Impact</option>
-              <option value="pages"${this.sort === 'pages' ? ' selected' : ''}>Pages affected</option>
-              <option value="severity"${this.sort === 'severity' ? ' selected' : ''}>Severity</option>
-              <option value="title"${this.sort === 'title' ? ' selected' : ''}>Name</option>
+              <option value="impact"${this.sort === 'impact' ? ' selected' : ''}>${t("Impact")}</option>
+              <option value="pages"${this.sort === 'pages' ? ' selected' : ''}>${t("Pages affected")}</option>
+              <option value="severity"${this.sort === 'severity' ? ' selected' : ''}>${t("Severity")}</option>
+              <option value="title"${this.sort === 'title' ? ' selected' : ''}>${t("Name")}</option>
             </select>
           </label>
-          <span class="iss-count">${visible.length} shown</span>
+          <span class="iss-count">${t("{count} shown", { count: visible.length })}</span>
         </div>
 
         <div class="iss-body">
-          <nav class="iss-rail" aria-label="Filter by area">
+          <nav class="iss-rail" aria-label="${t("Filter by area")}">
             <div class="iss-rail-item ${this.category === 'all' ? 'is-on' : ''}" data-cat="all">
-              <span>All issues</span><span class="iss-rail-n">${this.issues.length}</span>
+              <span>${t("All issues")}</span><span class="iss-rail-n">${this.issues.length}</span>
             </div>
             ${cats.map(([c, n]) => `
               <div class="iss-rail-item ${this.category === c ? 'is-on' : ''} ${n ? '' : 'is-empty'}"
                    data-cat="${esc(c)}">
-                <span>${esc(c)}</span><span class="iss-rail-n">${n}</span>
+                <span>${esc(t(c))}</span><span class="iss-rail-n">${n}</span>
               </div>`).join('')}
           </nav>
 
@@ -223,7 +225,7 @@ export class IssuesView {
               return `<section class="iss-group">
                 <div class="iss-group-h ${isCollapsed ? 'collapsed' : ''}" data-group="${esc(g.key)}">
                   <span class="iss-group-caret">▾</span>
-                  <span class="iss-group-t">${esc(g.key)}</span>
+                  <span class="iss-group-t">${esc(t(g.key))}</span>
                   <span class="iss-group-n">${g.rows.length}</span>
                   ${this._mixBar(g.rows)}
                 </div>
@@ -232,8 +234,8 @@ export class IssuesView {
                 </div>
               </section>`;
             }).join('') : `<div class="iss-empty">
-              <p><strong>Nothing matches these filters.</strong></p>
-              <p>Try clearing the search or severity filters.</p>
+              <p><strong>${t("Nothing matches these filters.")}</strong></p>
+              <p>${t("Try clearing the search or severity filters.")}</p>
             </div>`}
           </div>
         </div>

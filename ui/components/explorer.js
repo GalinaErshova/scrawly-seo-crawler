@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/explorer.js
 // Screaming-Frog-style Explorer: dimension tabs (one data model, many slices),
 // each with its own column set + a contextual, faceted filter bar showing live
@@ -19,7 +20,7 @@ const statusCell = (val) => {
   span.textContent = val;
   return span;
 };
-const yesno = (v) => (v === false ? 'No' : 'Yes');
+const yesno = (v) => t(v === false ? 'No' : 'Yes');
 const linkCell = (val) => {
   const a = document.createElement('a');
   a.href = '#'; a.className = 'mono'; a.textContent = val;
@@ -30,38 +31,38 @@ const linkCell = (val) => {
 
 // Column presets
 const C = {
-  address: { key: 'address', label: 'Address', render: linkCell },
-  status: { key: 'status', label: 'Status', render: statusCell },
-  indexable: { key: 'indexable', label: 'Indexable', render: yesno },
-  depth: { key: 'depth', label: 'Depth', render: (v) => (v ?? '–') },
-  inlinks: { key: 'inlink_count', label: 'Inlinks' },
-  authority: { key: 'pagerank', label: 'Authority', render: (v) => (v == null ? '–' : v) },
-  outlinks: { key: 'outlink_count', label: 'Outlinks' },
-  words: { key: 'word_count', label: 'Words' },
-  title: { key: 'title', label: 'Title' },
-  titleLen: { key: '_titleLen', label: 'Len' },
-  meta: { key: 'meta_desc', label: 'Meta Description' },
-  metaLen: { key: '_metaLen', label: 'Len' },
+  address: { key: 'address', label: t("Address"), render: linkCell },
+  status: { key: 'status', label: t("Status"), render: statusCell },
+  indexable: { key: 'indexable', label: t("Indexable"), render: yesno },
+  depth: { key: 'depth', label: t("Depth"), render: (v) => (v ?? '–') },
+  inlinks: { key: 'inlink_count', label: t("Inlinks") },
+  authority: { key: 'pagerank', label: t("Authority"), render: (v) => (v == null ? '–' : v) },
+  outlinks: { key: 'outlink_count', label: t("Outlinks") },
+  words: { key: 'word_count', label: t("Words") },
+  title: { key: 'title', label: t("Title") },
+  titleLen: { key: '_titleLen', label: t("Len") },
+  meta: { key: 'meta_desc', label: t("Meta Description") },
+  metaLen: { key: '_metaLen', label: t("Len") },
   h1: { key: '_h1', label: 'H1' },
-  h1count: { key: '_h1c', label: 'Count' },
+  h1count: { key: '_h1c', label: t("Count") },
   canonical: { key: 'canonical', label: 'Canonical', render: (v) => v || ' - ' },
   metaRobots: { key: 'meta_robots', label: 'Meta Robots', render: (v) => v || ' - ' },
   xRobots: { key: 'x_robots', label: 'X-Robots-Tag', render: (v) => v || ' - ' },
-  reason: { key: 'indexability_reason', label: 'Indexability', render: (v) => v || 'Indexable' },
-  hops: { key: '_hops', label: 'Hops' },
+  reason: { key: 'indexability_reason', label: t("Indexability"), render: (v) => v || t('Indexable') },
+  hops: { key: '_hops', label: t("Hops") },
   cls: { key: 'cls', label: 'CLS', render: (v) => (v == null ? '–' : v) },
-  lcp: { key: 'lcp_s', label: 'LCP(s)', render: (v) => (v == null ? '–' : v) },
-  readability: { key: 'readability', label: 'Readability', render: (v) => (v == null ? '–' : v) },
-  textCode: { key: 'text_to_code', label: 'Text/Code', render: (v) => (v == null ? '–' : Math.round(v * 100) + '%') },
-  forms: { key: 'forms_count', label: 'Forms', render: (v) => (v || 0) },
-  segment: { key: 'segment', label: 'Segment', render: (v) => v || ' - ' },
-  ga4Sessions: { key: '_ga4Sessions', label: 'Sessions', render: (v) => (v == null ? '–' : v) },
-  ga4Engaged: { key: '_ga4Engaged', label: 'Engaged', render: (v) => (v == null ? '–' : v) },
-  ga4Views: { key: '_ga4Views', label: 'Views', render: (v) => (v == null ? '–' : v) },
-  ga4Conv: { key: '_ga4Conv', label: 'Conversions', render: (v) => (v == null ? '–' : v) },
-  spellCount: { key: '_spellCount', label: 'Issues', render: (v) => (v || 0) },
-  pdfPages: { key: '_pdfPages', label: 'Pages', render: (v) => (v == null ? '–' : v) },
-  pdfAuthor: { key: '_pdfAuthor', label: 'Author', render: (v) => v || ' - ' },
+  lcp: { key: 'lcp_s', label: t("LCP(s)"), render: (v) => (v == null ? '–' : v) },
+  readability: { key: 'readability', label: t("Readability"), render: (v) => (v == null ? '–' : v) },
+  textCode: { key: 'text_to_code', label: t("Text/Code"), render: (v) => (v == null ? '–' : Math.round(v * 100) + '%') },
+  forms: { key: 'forms_count', label: t("Forms"), render: (v) => (v || 0) },
+  segment: { key: 'segment', label: t("Segment"), render: (v) => v || ' - ' },
+  ga4Sessions: { key: '_ga4Sessions', label: t("Sessions"), render: (v) => (v == null ? '–' : v) },
+  ga4Engaged: { key: '_ga4Engaged', label: t("Engaged"), render: (v) => (v == null ? '–' : v) },
+  ga4Views: { key: '_ga4Views', label: t("Views"), render: (v) => (v == null ? '–' : v) },
+  ga4Conv: { key: '_ga4Conv', label: t("Conversions"), render: (v) => (v == null ? '–' : v) },
+  spellCount: { key: '_spellCount', label: t("Issues"), render: (v) => (v || 0) },
+  pdfPages: { key: '_pdfPages', label: t("Pages"), render: (v) => (v == null ? '–' : v) },
+  pdfAuthor: { key: '_pdfAuthor', label: t("Author"), render: (v) => v || ' - ' },
 };
 
 // Duplicate detector: rows whose non-empty key value occurs >1 time.
@@ -70,10 +71,10 @@ function dupes(rows, keyFn) {
   rows.forEach(r => { const k = keyFn(r); if (k) counts[k] = (counts[k] || 0) + 1; });
   return rows.filter(r => { const k = keyFn(r); return k && counts[k] > 1; });
 }
-const F = (id, label, fn) => ({ id, label, fn });
+const F = (id, label, fn) => ({ id, label: t(label), fn });
 
 const DIMENSIONS = [
-  { id: 'internal', label: 'Internal', cols: [C.address, C.status, C.indexable, C.depth, C.inlinks, C.authority, C.words, C.segment, C.title], filters: [
+  { id: 'internal', label: t("Internal"), cols: [C.address, C.status, C.indexable, C.depth, C.inlinks, C.authority, C.words, C.segment, C.title], filters: [
     F('all', 'All', (r) => r),
     F('indexable', 'Indexable', (r) => r.filter(x => x.indexable !== false)),
     F('nonindexable', 'Non-Indexable', (r) => r.filter(x => x.indexable === false)),
@@ -82,7 +83,7 @@ const DIMENSIONS = [
     F('r4', 'Client Error (4xx)', (r) => r.filter(x => x.status >= 400 && x.status < 500)),
     F('r5', 'Server Error (5xx)', (r) => r.filter(x => x.status >= 500)),
   ]},
-  { id: 'response', label: 'Response Codes', cols: [C.address, C.status, C.hops, C.reason], filters: [
+  { id: 'response', label: t("Response Codes"), cols: [C.address, C.status, C.hops, C.reason], filters: [
     F('all', 'All', (r) => r),
     F('ok', 'Success (2xx)', (r) => r.filter(x => x.status >= 200 && x.status < 300)),
     F('r3', 'Redirection (3xx)', (r) => r.filter(x => x.status >= 300 && x.status < 400)),
@@ -90,14 +91,14 @@ const DIMENSIONS = [
     F('r5', 'Server Error (5xx)', (r) => r.filter(x => x.status >= 500)),
     F('none', 'No Response', (r) => r.filter(x => !x.status)),
   ]},
-  { id: 'titles', label: 'Page Titles', cols: [C.address, C.title, C.titleLen], filters: [
+  { id: 'titles', label: t("Page Titles"), cols: [C.address, C.title, C.titleLen], filters: [
     F('all', 'All', (r) => r),
     F('missing', 'Missing', (r) => r.filter(x => !x.title)),
     F('dup', 'Duplicate', (r) => dupes(r, x => (x.title || '').trim().toLowerCase())),
     F('long', 'Over 60 Chars', (r) => r.filter(x => len(x.title) > 60)),
     F('short', 'Below 30 Chars', (r) => r.filter(x => x.title && len(x.title) < 30)),
   ]},
-  { id: 'meta', label: 'Meta Description', cols: [C.address, C.meta, C.metaLen], filters: [
+  { id: 'meta', label: t("Meta Description"), cols: [C.address, C.meta, C.metaLen], filters: [
     F('all', 'All', (r) => r),
     F('missing', 'Missing', (r) => r.filter(x => !x.meta_desc)),
     F('dup', 'Duplicate', (r) => dupes(r, x => (x.meta_desc || '').trim().toLowerCase())),
@@ -110,19 +111,19 @@ const DIMENSIONS = [
     F('multi', 'Multiple', (r) => r.filter(x => x.h1 && x.h1.length > 1)),
     F('dup', 'Duplicate', (r) => dupes(r, x => joinArr(x.h1).trim().toLowerCase())),
   ]},
-  { id: 'directives', label: 'Directives', cols: [C.address, C.metaRobots, C.xRobots, C.indexable, C.canonical], filters: [
+  { id: 'directives', label: t("Directives"), cols: [C.address, C.metaRobots, C.xRobots, C.indexable, C.canonical], filters: [
     F('all', 'All', (r) => r),
     F('noindex', 'Noindex', (r) => r.filter(x => /noindex/i.test(x.meta_robots || '') || /noindex/i.test(x.x_robots || '') || x.indexable === false)),
     F('nofollow', 'Nofollow', (r) => r.filter(x => /nofollow/i.test(x.meta_robots || ''))),
     F('canon', 'Canonicalised', (r) => r.filter(x => x.canonical && norm(x.canonical) !== norm(x.address))),
   ]},
-  { id: 'canonicals', label: 'Canonicals', cols: [C.address, C.canonical, C.indexable], filters: [
+  { id: 'canonicals', label: t("Canonicals"), cols: [C.address, C.canonical, C.indexable], filters: [
     F('all', 'All', (r) => r),
     F('missing', 'Missing', (r) => r.filter(x => !x.canonical)),
     F('self', 'Self-Referencing', (r) => r.filter(x => x.canonical && norm(x.canonical) === norm(x.address))),
     F('canon', 'Canonicalised', (r) => r.filter(x => x.canonical && norm(x.canonical) !== norm(x.address))),
   ]},
-  { id: 'content', label: 'Content', cols: [C.address, C.words, C.readability, C.textCode, C.forms], filters: [
+  { id: 'content', label: t("Content"), cols: [C.address, C.words, C.readability, C.textCode, C.forms], filters: [
     F('all', 'All', (r) => r),
     F('thin', 'Thin (<200 words)', (r) => r.filter(x => (x.word_count || 0) < 200)),
     F('hardread', 'Hard to Read (<30)', (r) => r.filter(x => x.readability != null && (x.word_count || 0) >= 300 && x.readability < 30)),
@@ -130,14 +131,14 @@ const DIMENSIONS = [
   ]},
   // Enrichment dimensions — only meaningful when the crawl ran the enrichment,
   // but harmless (empty) otherwise.
-  { id: 'analytics', label: 'Analytics', cols: [C.address, C.ga4Sessions, C.ga4Engaged, C.ga4Views, C.ga4Conv, C.segment], filters: [
+  { id: 'analytics', label: t("Analytics"), cols: [C.address, C.ga4Sessions, C.ga4Engaged, C.ga4Views, C.ga4Conv, C.segment], filters: [
     F('all', 'All', (r) => r),
     F('hasdata', 'Has GA4 Data', (r) => r.filter(x => x._hasGa4)),
     F('nodata', 'No GA4 Data', (r) => r.filter(x => !x._hasGa4 && x.indexable !== false)),
     F('sessions', 'Sessions > 0', (r) => r.filter(x => (x._ga4Sessions || 0) > 0)),
     F('conv', 'Has Conversions', (r) => r.filter(x => (x._ga4Conv || 0) > 0)),
   ]},
-  { id: 'spelling', label: 'Spelling', cols: [C.address, C.spellCount, C.words, C.title], filters: [
+  { id: 'spelling', label: t("Spelling"), cols: [C.address, C.spellCount, C.words, C.title], filters: [
     F('all', 'All', (r) => r),
     F('issues', 'Has Issues', (r) => r.filter(x => (x._spellCount || 0) > 0)),
     F('clean', 'Clean', (r) => r.filter(x => (x._spellCount || 0) === 0)),
@@ -180,7 +181,7 @@ export class Explorer {
 
   // Show only these pages (e.g. the pages an issue affects) until cleared.
   focusOn(ids, label) {
-    this.focus = { ids: new Set(ids || []), label: label || 'selected pages' };
+    this.focus = { ids: new Set(ids || []), label: label || t('selected pages') };
     this.dimId = 'internal';
     this.filterId = 'all';
     this._renderTabs();
@@ -202,11 +203,11 @@ export class Explorer {
     ];
     this.railEl.innerHTML = spec.map(([h, items]) => `
       <div class="ex-rail-group">
-        <div class="ex-rail-h">${h}</div>
+        <div class="ex-rail-h">${t(h)}</div>
         ${items.map(([label, dim, f]) => {
           const active = dim === this.dimId && f === this.filterId ? ' active' : '';
           return `<button class="ex-rail-item${active}" data-dim="${dim}" data-f="${f}">
-            <span>${label}</span><span class="ex-rail-n">${this._count(dim, f)}</span></button>`;
+            <span>${t(label)}</span><span class="ex-rail-n">${this._count(dim, f)}</span></button>`;
         }).join('')}
       </div>`).join('');
     this.railEl.querySelectorAll('.ex-rail-item').forEach(b =>
@@ -250,7 +251,7 @@ export class Explorer {
       r['cx:' + k] = Array.isArray(v) ? v.join(' | ') : (v ?? '');
     }));
     this.customDim = this.customKeys.length ? {
-      id: 'custom', label: 'Custom',
+      id: 'custom', label: t("Custom"),
       cols: [C.address, ...this.customKeys.map(k => ({ key: 'cx:' + k, label: k }))],
       filters: [F('all', 'All', (r) => r)],
     } : null;
@@ -285,9 +286,9 @@ export class Explorer {
     // Contextual filter chips with live counts computed over the full row set.
     const base = this._base();
     const focusBar = this.focus
-      ? `<div class="ex-focus" role="status">Showing ${base.length} page${base.length === 1 ? '' : 's'} with:
+      ? `<div class="ex-focus" role="status">${t(base.length === 1 ? 'Showing {count} page with:' : 'Showing {count} pages with:', { count: base.length })}
           <b>${esc(this.focus.label)}</b>
-          <button class="ex-focus-clear" type="button">Show all pages</button></div>`
+          <button class="ex-focus-clear" type="button">${t("Show all pages")}</button></div>`
       : '';
     this.filterEl.innerHTML = focusBar + dim.filters.map(f => {
       const count = f.fn(base).length;
@@ -301,9 +302,9 @@ export class Explorer {
     // Column picker (show/hide) — right-aligned in the filter bar.
     const pick = document.createElement('div');
     pick.className = 'ex-colpick';
-    pick.innerHTML = `<button class="ex-colpick-btn" type="button">Columns ▾</button>
+    pick.innerHTML = `<button class="ex-colpick-btn" type="button">${t("Columns ▾")}</button>
       <div class="ex-colpick-menu hidden">${dim.cols.filter(c => c.key !== 'address').map(c =>
-        `<label><input type="checkbox" data-col="${c.key}" ${this.hiddenCols.has(c.key) ? '' : 'checked'}> ${c.label}</label>`).join('')}</div>`;
+        `<label><input type="checkbox" data-col="${c.key}" ${this.hiddenCols.has(c.key) ? '' : 'checked'}> ${esc(c.label)}</label>`).join('')}</div>`;
     this.filterEl.appendChild(pick);
     pick.querySelector('.ex-colpick-btn').addEventListener('click', () =>
       pick.querySelector('.ex-colpick-menu').classList.toggle('hidden'));

@@ -1,5 +1,6 @@
 import '@fontsource-variable/inter';
 import * as d3 from 'd3';
+import { language, locale, localize, saveLanguage, t as translate } from './i18n.js';
 import { createThemeToggle, initTheme } from './theme.js';
 import { startApp, ownerKey, authorizeCrawl, onCrawlFinished } from './edition.js';
 import { routeExternalLinks, openExternal, saveDownload } from './components/external.js';
@@ -26,6 +27,25 @@ import { FixAgent } from './components/fix-agent.js';
 import { toast } from './components/toast.js';
 
 const API_BASE = '/api';
+
+document.documentElement.lang = language;
+localize(document.head);
+localize(document.body);
+
+const languageSelect = document.getElementById('settings-language');
+languageSelect.value = language;
+languageSelect.addEventListener('change', () => {
+  if (languageSelect.value === language) return;
+  if (!saveLanguage(languageSelect.value)) {
+    languageSelect.value = language;
+    toast.show(translate('Language preference could not be saved.'), 'error');
+    return;
+  }
+  try {
+    sessionStorage.setItem('scrawly-reopen-settings', JSON.stringify(crawlConsole.crawlId ?? null));
+  } catch { /* session storage is optional */ }
+  window.location.reload();
+});
 
 // Edition-specific behaviour lives in edition.js (imported first). External links
 // open in the user's browser.
@@ -86,8 +106,7 @@ function _setBackendOffline(off) {
       bar = document.createElement('div');
       bar.id = 'backend-offline-bar';
       bar.setAttribute('role', 'alert');
-      bar.textContent = '⚠ Scrawly’s engine isn’t responding. It usually recovers on its own; '
-        + 'if this message stays, close and reopen Scrawly.';
+      bar.textContent = translate('⚠ Scrawly’s engine isn’t responding. It usually recovers on its own; if this message stays, close and reopen Scrawly.');
       document.body.appendChild(bar);
     }
   } else if (bar) { bar.remove(); }
@@ -158,20 +177,21 @@ async function loadReports(crawlId) {
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   if (!preview) return;
   if (!crawlId) {
-    preview.innerHTML = '<div class="rpt-empty">Open a project to preview its report.</div>';
+    preview.innerHTML = `<div class="rpt-empty">${translate("Open a project to preview its report.")}</div>`;
     if (brandStatus) brandStatus.textContent = ' - ';
     return;
   }
-  preview.innerHTML = '<div class="rpt-empty">Building preview…</div>';
+  preview.innerHTML = `<div class="rpt-empty">${translate("Building preview…")}</div>`;
   const [d, s] = await Promise.all([fetchJson(`/dashboard/${crawlId}`), fetchJson('/settings')]);
   const brandName = (s && s.report_brand_name) || 'Scrawly';
   const brandColor = (s && s.report_brand_color) || '#6366f1';
   if (brandStatus) {
-    brandStatus.innerHTML = (s && s.report_brand_name)
-      ? `White-labelled as <strong>${esc(brandName)}</strong>${s.report_brand_logo ? ' with your logo' : ''}.`
-      : 'Using the default <strong>Scrawly</strong> branding - add your agency name, logo and colour.';
+    const branding = s?.report_brand_name
+      ? (s.report_brand_logo ? 'White-labelled as {brand} with your logo.' : 'White-labelled as {brand}.')
+      : 'Using the default {brand} branding - add your agency name, logo and colour.';
+    brandStatus.textContent = translate(branding, { brand: brandName });
   }
-  if (!d) { preview.innerHTML = '<div class="rpt-empty">Preview unavailable.</div>'; return; }
+  if (!d) { preview.innerHTML = `<div class="rpt-empty">${translate("Preview unavailable.")}</div>`; return; }
   const c = crawlsById[crawlId];
   const site = (c && c.base_url) || d.target_url || '';
   const health = d.health_score ?? 0;
@@ -181,16 +201,16 @@ async function loadReports(crawlId) {
     <div class="rpt-cover" style="background:${grad}">
       <div style="min-width:0;">
         <div class="rpt-cover-brand"><span class="rpt-cover-mark">${esc((brandName[0] || 'S').toUpperCase())}</span>${esc(brandName)}</div>
-        <h2>Technical SEO Audit</h2>
+        <h2>${translate("Technical SEO Audit")}</h2>
         <div class="rpt-cover-site">${esc(site)}</div>
       </div>
       <div class="rpt-cover-ring"><div id="rpt-ring"></div><div class="rpt-cover-grade">${healthGrade(health)}</div></div>
     </div>
     <div class="rpt-cover-stats">
-      <div class="rpt-cover-stat"><div class="v">${t.urls ?? 0}</div><div class="l">Pages</div></div>
-      <div class="rpt-cover-stat"><div class="v">${d.indexable_pct ?? 0}%</div><div class="l">Indexable</div></div>
-      <div class="rpt-cover-stat"><div class="v">${t.issues ?? 0}</div><div class="l">Issues</div></div>
-      <div class="rpt-cover-stat"><div class="v">${(d.severity && d.severity.Critical) ?? 0}</div><div class="l">Critical</div></div>
+      <div class="rpt-cover-stat"><div class="v">${t.urls ?? 0}</div><div class="l">${translate("Pages")}</div></div>
+      <div class="rpt-cover-stat"><div class="v">${d.indexable_pct ?? 0}%</div><div class="l">${translate("Indexable")}</div></div>
+      <div class="rpt-cover-stat"><div class="v">${t.issues ?? 0}</div><div class="l">${translate("Issues")}</div></div>
+      <div class="rpt-cover-stat"><div class="v">${(d.severity && d.severity.Critical) ?? 0}</div><div class="l">${translate("Critical")}</div></div>
     </div>`;
   const ring = document.getElementById('rpt-ring');
   if (ring) ring.appendChild(createHealthScoreRing(health, 74, 8));
@@ -377,7 +397,7 @@ const publicAudit = new PublicAudit(
         id: crawlId, client_name: host, base_url: targetUrl, public: true,
         started_at: new Date().toISOString(),
       };
-      toast.show(`Audit of ${host} started. Follow it in the live panel.`, 'info');
+      toast.show(translate('Audit of {host} started. Follow it in the live panel.', { host }), 'info');
       crawlConsole.start(crawlId, (id) => {
         onCrawlFinished();   // edition hook (see edition.js)
         openPublicCrawl(id, targetUrl);
@@ -400,7 +420,7 @@ function onCrawlStarted(crawlId) {
     if (currentCrawlId === id) loadCrawlData(id);
     refreshCrawlLists();
   });
-  toast.show('Crawl started. Follow it in the live panel.', 'info');
+  toast.show(translate('Crawl started. Follow it in the live panel.'), 'info');
   switchProjectView('view-home');
   loadClients();
   loadHome();
@@ -418,13 +438,13 @@ async function resumeCrawl(crawlId, button) {
   button.disabled = true;
   try {
     const authz = await authorizeCrawl();
-    if (authz.allowed === false) throw new Error(authz.message || 'This audit cannot resume right now.');
+    if (authz.allowed === false) throw new Error(authz.message || translate('This audit cannot resume right now.'));
     const headers = authz.token ? { 'X-Scrawly-Authz': authz.token } : {};
     const response = await fetch(`${API_BASE}/audit/resume/${crawlId}`, { method: 'POST', headers });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.crawl_id !== crawlId) {
       throw new Error((typeof data.detail === 'string' ? data.detail : data.detail?.message)
-        || 'Could not resume the audit.');
+        || translate('Could not resume the audit.'));
     }
     crawlConsole.start(crawlId, (id) => {
       onCrawlFinished();
@@ -445,7 +465,7 @@ const wizard = new Wizard(
   document.getElementById('wizard-container'),
   API_BASE,
   (crawlId) => {
-    toast.show('Crawl complete. Your results are ready.', 'success');
+    toast.show(translate('Crawl complete. Your results are ready.'), 'success');
     loadCrawlData(crawlId);
     switchProjectView('view-dashboard');
   },
@@ -489,8 +509,8 @@ async function loadClients() {
     list.innerHTML = '';
     if (!clients.length) {
       list.innerHTML = `<div class="card" style="text-align:center; padding: var(--space-4);">
-        <p style="margin-bottom: var(--space-2);">No clients yet.</p>
-        <button class="btn btn-primary" id="clients-empty-add">+ Add your first client</button>
+        <p style="margin-bottom: var(--space-2);">${translate("No clients yet.")}</p>
+        <button class="btn btn-primary" id="clients-empty-add">${translate('+ Add your first client')}</button>
       </div>`;
       document.getElementById('clients-empty-add')?.addEventListener('click', () => launchClientWizard(null));
       return;
@@ -501,17 +521,17 @@ async function loadClients() {
       card.style.cssText = 'justify-content: space-between; align-items: center;';
       // Every site can be audited; connecting WordPress only adds safe fixes.
       const badge = c.connected
-        ? `<span class="badge badge-passed">WordPress connected</span>`
-        : `<span class="badge badge-notice" title="Read-only audits. Connect WordPress to apply fixes.">URL only</span>`;
+        ? `<span class="badge badge-passed">${translate("WordPress connected")}</span>`
+        : `<span class="badge badge-notice" title="${esc(translate('Read-only audits. Connect WordPress to apply fixes.'))}">${translate('URL only')}</span>`;
       card.innerHTML = `
         <div>
           <h3 style="margin-bottom:2px;">${esc(c.name)} ${badge}</h3>
           <p style="margin:0; color: var(--text-secondary);">${esc(c.base_url || '')}</p>
         </div>
         <div class="flex gap-2" style="align-items:center;">
-          <button class="btn btn-link btn-remove" title="Remove client" aria-label="Remove ${esc(c.name)}">✕</button>
+          <button class="btn btn-link btn-remove" title="${esc(translate('Remove client'))}" aria-label="${esc(translate('Remove {name}', { name: c.name }))}">✕</button>
           <button class="btn btn-secondary btn-setup">${c.connected ? 'Manage' : 'Set up'}</button>
-          <button class="btn btn-primary btn-audit">Run Audit</button>
+          <button class="btn btn-primary btn-audit">${translate("Run Audit")}</button>
         </div>`;
       card.querySelector('.btn-setup').addEventListener('click', () => launchClientWizard(c));
       card.querySelector('.btn-audit').addEventListener('click', async () => {
@@ -519,12 +539,12 @@ async function loadClients() {
         await wizard.openForClient(c.id);
       });
       card.querySelector('.btn-remove').addEventListener('click', async () => {
-        if (!confirm(`Remove "${c.name}" and all its audits? This cannot be undone.`)) return;
+        if (!confirm(translate('Remove "{name}" and all its audits? This cannot be undone.', { name: c.name }))) return;
         try {
           const r = await fetch(`${API_BASE}/clients/${c.id}`, { method: 'DELETE' });
-          if (r.ok) { toast.show(`Removed ${c.name}.`, 'success'); loadClients(); loadHome(); }
-          else { toast.show('Could not remove client.', 'error'); }
-        } catch (e) { toast.show('Network error.', 'error'); }
+          if (r.ok) { toast.show(translate('Removed {name}.', { name: c.name }), 'success'); loadClients(); loadHome(); }
+          else { toast.show(translate('Could not remove client.'), 'error'); }
+        } catch (e) { toast.show(translate('Network error.'), 'error'); }
       });
       list.appendChild(card);
     });
@@ -541,7 +561,7 @@ async function loadHome() {
     list.innerHTML = '';
 
     if (crawls.length === 0) {
-      list.innerHTML = `<div class="card" style="text-align: center; padding: var(--space-5);">No crawls yet. Start a new one!</div>`;
+      list.innerHTML = `<div class="card" style="text-align: center; padding: var(--space-5);">${translate("No crawls yet. Start a new one!")}</div>`;
       return;
     }
     
@@ -556,14 +576,14 @@ async function loadHome() {
       const partial = isPartialCrawl(c);
       card.innerHTML = `
         <div>
-          <h3>${esc(c.client_name || 'Unknown')} <span style="color: var(--text-secondary); font-weight: 400;">· Audit #${c.id}</span></h3>
-          <p style="margin: 0; color: var(--text-secondary);">${esc(c.base_url || '')} • ${esc(date)} • ${esc(formatCrawlProgress(c))}${c.resumable ? ' • Interrupted' : ''}</p>
+          <h3>${esc(c.client_name || translate('Unknown'))} <span style="color: var(--text-secondary); font-weight: 400;">· ${translate('Audit #{number}', { number: c.id })}</span></h3>
+          <p style="margin: 0; color: var(--text-secondary);">${esc(c.base_url || '')} • ${esc(date)} • ${esc(formatCrawlProgress(c))}${c.resumable ? ' • ' + translate('Interrupted') : ''}</p>
         </div>
         <div class="flex gap-1" style="align-items:center;">
-          <button class="btn btn-secondary js-open">${partial ? 'View saved pages' : 'Open Project'}</button>
-          ${c.resumable ? '<button class="btn btn-primary js-resume" type="button">Resume audit</button>' : ''}
-          <button class="btn btn-ghost js-delete" title="Delete this audit and all its data"
-                  aria-label="Delete audit ${c.id}">Delete</button>
+          <button class="btn btn-secondary js-open">${translate(partial ? 'View saved pages' : 'Open Project')}</button>
+          ${c.resumable ? `<button class="btn btn-primary js-resume" type="button">${translate("Resume audit")}</button>` : ''}
+          <button class="btn btn-ghost js-delete" title="${esc(translate('Delete this audit and all its data'))}"
+                  aria-label="${esc(translate('Delete audit {number}', { number: c.id }))}">${translate('Delete')}</button>
         </div>
       `;
       card.querySelector('.js-open').addEventListener('click', () => {
@@ -599,7 +619,7 @@ async function deleteAudit(crawl, card) {
 
   const btn = card.querySelector('.js-delete');
   btn.disabled = true;
-  btn.textContent = 'Deleting…';
+  btn.textContent = translate('Deleting…');
   try {
     const res = await fetch(`${API_BASE}/crawls/${crawl.id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -620,9 +640,9 @@ async function deleteAudit(crawl, card) {
     loadHome();
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = 'Delete';
+    btn.textContent = translate('Delete');
     console.warn('[scrawly] delete failed:', e);
-    toast.show('Could not delete this audit. Please try again.', 'error');
+    toast.show(translate('Could not delete this audit. Please try again.'), 'error');
   }
 }
 
@@ -640,7 +660,7 @@ async function loadCrawlData(crawlId) {
   refreshSavedPageStatus(crawlId, seq);
   const known = crawlsById[crawlId];
   document.getElementById('active-project-name').textContent =
-    `Loading ${(known && known.client_name) || 'audit'}...`;
+    translate('Loading {name}...', { name: known?.client_name || translate('audit') });
 
   try {
     const issues = await fetchJson(`/issues/${crawlId}`) || [];
@@ -688,7 +708,7 @@ async function refreshSavedPageStatus(crawlId, seq) {
   if (!partial) return;
   const stopped = ['failed', 'interrupted'].includes(status.phase);
   notice.querySelector('span').textContent =
-    `${stopped || status.resumable ? 'Audit interrupted' : 'Audit in progress'} · ${formatCrawlProgress(status)}`;
+    `${stopped || status.resumable ? translate('Audit interrupted') : translate('Audit in progress')} · ${formatCrawlProgress(status)}`;
   const button = notice.querySelector('button');
   button.hidden = !status.resumable;
   button.onclick = () => resumeCrawl(crawlId, button);
@@ -719,11 +739,11 @@ const STATUS_COLORS = {
   other: 'var(--text-tertiary)',
 };
 function healthGrade(score) {
-  if (score >= 90) return 'Excellent';
-  if (score >= 75) return 'Good';
-  if (score >= 50) return 'Needs work';
-  if (score >= 25) return 'Poor';
-  return 'Critical';
+  if (score >= 90) return translate('Excellent');
+  if (score >= 75) return translate('Good');
+  if (score >= 50) return translate('Needs work');
+  if (score >= 25) return translate('Poor');
+  return translate('Critical condition');
 }
 
 // Fetch the server-side aggregation and render the ring, stat tiles and charts.
@@ -751,29 +771,29 @@ async function loadDashboard(crawlId) {
   const tiles = document.getElementById('dash-tiles');
   tiles.innerHTML = '';
   const pct = d.indexable_pct ?? 0;
-  tiles.appendChild(statTile({ label: 'Pages crawled', value: t.urls ?? 0 }));
+  tiles.appendChild(statTile({ label: translate('Pages crawled'), value: t.urls ?? 0 }));
   tiles.appendChild(statTile({
-    label: 'Indexable', value: `${pct}%`,
+    label: translate('Indexable'), value: `${pct}%`,
     sub: `${t.indexable ?? 0} of ${t.urls ?? 0} pages`,
     tone: pct >= 80 ? 'passed' : pct >= 50 ? 'warning' : 'critical',
   }));
   tiles.appendChild(statTile({
-    label: 'Broken (4xx / 5xx)', value: t.broken ?? 0,
+    label: translate('Broken (4xx / 5xx)'), value: t.broken ?? 0,
     sub: `avg depth ${t.avg_depth ?? 0}`,
     tone: (t.broken ?? 0) > 0 ? 'critical' : 'passed',
   }));
   tiles.appendChild(statTile({
-    label: 'Total issues', value: t.issues ?? 0,
+    label: translate('Total issues'), value: t.issues ?? 0,
     sub: `${sev.Critical ?? 0} critical · ${sev.High ?? 0} high`,
     tone: (sev.Critical ?? 0) > 0 ? 'critical' : (sev.High ?? 0) > 0 ? 'warning' : 'passed',
   }));
 
   // Severity distribution (stacked bar + legend)
   const sevSegs = ['Critical', 'High', 'Medium', 'Low', 'Info']
-    .map(k => ({ label: k, value: sev[k] || 0, color: SEV_COLORS[k] }));
+    .map(k => ({ label: translate(k), value: sev[k] || 0, color: SEV_COLORS[k] }));
   stackedBar(document.getElementById('chart-severity'), { segments: sevSegs });
   const sevTotal = document.getElementById('chart-severity-total');
-  if (sevTotal) sevTotal.textContent = `${t.issues ?? 0} issue${(t.issues ?? 0) === 1 ? '' : 's'}`;
+  if (sevTotal) sevTotal.textContent = translate('Issues found: {count}', { count: t.issues ?? 0 });
 
   // Response-code donut
   const sc = d.status_classes || {};
@@ -784,7 +804,7 @@ async function loadDashboard(crawlId) {
 
   // Issues by category (horizontal bars)
   bars(document.getElementById('chart-categories'), {
-    data: (d.issue_categories || []).map(c => ({ label: c.category, value: c.count })),
+    data: (d.issue_categories || []).map(c => ({ label: translate(c.category), value: c.count })),
     colorVar: 'var(--chart-1)',
   });
 
@@ -802,15 +822,15 @@ async function loadDashboard(crawlId) {
   // Indexability donut (indexable vs non-indexable)
   donut(document.getElementById('chart-indexability'), {
     data: [
-      { label: 'Indexable', value: t.indexable ?? 0, color: 'var(--color-passed)' },
-      { label: 'Non-indexable', value: t.non_indexable ?? 0, color: 'var(--color-warning)' },
+      { label: translate('Indexable'), value: t.indexable ?? 0, color: 'var(--color-passed)' },
+      { label: translate('Non-indexable'), value: t.non_indexable ?? 0, color: 'var(--color-warning)' },
     ],
     centerValue: `${pct}%`, centerLabel: 'indexable',
   });
 
   // Fixability by tier (how issues can be resolved)
   const tiers = d.tiers || {};
-  const TIER_LABELS = { AUTO: 'Auto-fixable', REVIEW: 'Needs review', FLAG: 'Manual fix' };
+  const TIER_LABELS = { AUTO: translate('Auto-fixable'), REVIEW: translate('Needs review'), FLAG: translate('Manual fix') };
   const TIER_COLORS = { AUTO: 'var(--color-passed)', REVIEW: 'var(--chart-3)', FLAG: 'var(--color-warning)' };
   bars(document.getElementById('chart-fixability'), {
     data: ['AUTO', 'REVIEW', 'FLAG']
@@ -857,7 +877,7 @@ async function renderFixesWidget(crawlId) {
       <div class="fixw-head">
         <div class="fixw-icon">✓</div>
         <div><div class="fixw-title">${count} fix${count !== 1 ? 'es' : ''} applied by the agent</div>
-        <div class="fixw-sub">Written to WordPress - each with a rollback snapshot.</div></div>
+        <div class="fixw-sub">${translate('Written to WordPress - each with a rollback snapshot.')}</div></div>
       </div>
       <div class="fixw-list">${rows}${list.length > 6 ? `<div class="fixw-more">+${list.length - 6} more</div>` : ''}</div>
     </div>`;
@@ -889,7 +909,7 @@ function _fmtDate(value) {
   if (!value) return '';
   const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`;
   const dt = new Date(iso);
-  return Number.isNaN(dt.getTime()) ? '' : dt.toLocaleString();
+  return Number.isNaN(dt.getTime()) ? '' : dt.toLocaleString(locale);
 }
 
 function populateDashboard(crawlId, issues) {
@@ -905,7 +925,7 @@ function populateDashboard(crawlId, issues) {
   topIssuesContainer.innerHTML = '';
   
   if (issues.length === 0) {
-    topIssuesContainer.innerHTML = `<div class="card"><p style="margin:0;">No issues found. Awesome!</p></div>`;
+    topIssuesContainer.innerHTML = `<div class="card"><p style="margin:0;">${translate("No issues found. Awesome!")}</p></div>`;
   } else {
     const sorted = [...issues].sort((a, b) => (SEV_RANK[b.severity] || 0) - (SEV_RANK[a.severity] || 0));
     sorted.slice(0, 5).forEach(issue => {
@@ -922,7 +942,7 @@ const SEV_RANK = { Critical: 5, High: 4, Medium: 3, Low: 2, Info: 1 };
 function openIssuePages(issue) {
   const ids = issue.affected_url_ids || [];
   if (ids.length === 0) {
-    toast.show('This issue affects the whole site, not specific pages.', 'info');
+    toast.show(translate('This issue affects the whole site, not specific pages.'), 'info');
     return;
   }
   switchProjectView('view-explorer');
@@ -950,7 +970,7 @@ function wireIssueCardActions(card, issue) {
 async function copyFixPrompt(issue, btn) {
   const original = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Building…';
+  btn.textContent = translate('Building…');
   try {
     const res = await fetch(`${API_BASE}/prompt/${currentCrawlId}/${issue.id}`);
     if (!res.ok) throw new Error(`prompt request failed: ${res.status}`);
@@ -959,7 +979,7 @@ async function copyFixPrompt(issue, btn) {
     // in hand, so a blocked clipboard must not cost a second round-trip.
     try {
       await navigator.clipboard.writeText(data.text);
-      btn.textContent = 'Copied ✓';
+      btn.textContent = translate('Copied ✓');
       btn.classList.add('is-copied');
       aiAssistant.say(
         `**Fix prompt copied** - ${issue.title}\n\n` +
@@ -970,14 +990,14 @@ async function copyFixPrompt(issue, btn) {
     } catch {
       // Clipboard needs a user gesture and a permission grant; when the browser
       // refuses, show the prompt inline so the user can still select and copy it.
-      btn.textContent = 'Shown in chat';
+      btn.textContent = translate('Shown in chat');
       aiAssistant.say(
         `**Fix prompt - ${issue.title}** (${data.stack_label}, ${data.affected} ` +
         `page${data.affected !== 1 ? 's' : ''}) - your browser blocked the ` +
         `clipboard, so here it is to copy manually:\n\n\`\`\`\n${data.text}\n\`\`\``);
     }
   } catch (err) {
-    btn.textContent = 'Failed';
+    btn.textContent = translate('Failed');
     aiAssistant.say(
       `Could not build a fix prompt for **${issue.title}** (${err.message}).`);
   } finally {
@@ -1002,7 +1022,7 @@ async function showFixOverview(issue) {
     `written to WordPress (each with a rollback snapshot):\n${lines}`);
   const choice = await aiAssistant.ask(
     `Undo ${n === 1 ? 'this change' : `these ${n} changes`} and restore the previous value on WordPress?`,
-    [{ label: n === 1 ? 'Undo it' : `Undo all ${n}`, value: 'undo' }, { label: 'Keep', value: 'keep' }]);
+    [{ label: n === 1 ? translate('Undo it') : `Undo all ${n}`, value: 'undo' }, { label: translate('Keep'), value: 'keep' }]);
   if (choice !== 'undo') return;
   let undone = 0, failed = 0;
   for (const f of mine) {
@@ -1056,10 +1076,10 @@ function _reportFilename() {
 }
 
 async function openReport() {
-  if (!currentCrawlId) { toast.show('Please select a project first.', 'error'); return; }
+  if (!currentCrawlId) { toast.show(translate('Please select a project first.'), 'error'); return; }
   if (window.pywebview?.api?.open_report) {
     const ok = await window.pywebview.api.open_report(currentCrawlId, ownerKey());
-    if (!ok) toast.show('Could not open the report. Please try again.', 'error');
+    if (!ok) toast.show(translate('Could not open the report. Please try again.'), 'error');
     return;
   }
   try {
@@ -1068,15 +1088,15 @@ async function openReport() {
     const url = URL.createObjectURL(new Blob([await res.text()], { type: 'text/html' }));
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch { toast.show('Could not open the report. Please try again.', 'error'); }
+  } catch { toast.show(translate('Could not open the report. Please try again.'), 'error'); }
 }
 
 let _pdfBusy = false;
 async function saveReportPdf() {
-  if (!currentCrawlId) { toast.show('Please select a project first.', 'error'); return; }
+  if (!currentCrawlId) { toast.show(translate('Please select a project first.'), 'error'); return; }
   if (_pdfBusy) return;   // one save dialog at a time
   _pdfBusy = true;
-  toast.show('Preparing your PDF…', 'info');
+  toast.show(translate('Preparing your PDF…'), 'info');
   try {
     let outcome;
     if (window.pywebview?.api?.save_pdf) {
@@ -1085,8 +1105,8 @@ async function saveReportPdf() {
     } else {
       outcome = await saveDownload(`${API_BASE}/report/${currentCrawlId}/pdf`, _reportFilename());
     }
-    if (outcome === 'saved') toast.show('Report saved to your computer.', 'success');
-    else if (outcome === 'failed') toast.show('Could not create the PDF. Please try again.', 'error');
+    if (outcome === 'saved') toast.show(translate('Report saved to your computer.'), 'success');
+    else if (outcome === 'failed') toast.show(translate('Could not create the PDF. Please try again.'), 'error');
   } finally {
     _pdfBusy = false;
   }
@@ -1108,11 +1128,11 @@ document.getElementById('dash-btn-recrawl')?.addEventListener('click', async () 
   try {
     const crawls = await fetchJson('/crawls') || [];
     const current = crawls.find(c => c.id === currentCrawlId);
-    if (!current) { toast.show('Could not find this audit to run it again.', 'error'); return; }
+    if (!current) { toast.show(translate('Could not find this audit to run it again.'), 'error'); return; }
     switchProjectView('view-wizard');
     wizard.startCrawl(current.client_id);
   } catch {
-    toast.show('Could not start the crawl again. Please try again.', 'error');
+    toast.show(translate('Could not start the crawl again. Please try again.'), 'error');
   }
 });
 
@@ -1129,7 +1149,7 @@ async function loadSettings() {
     set('set-ai-base', s.ai_base_url);
     set('set-ai-model', s.ai_model);
     const hint = document.getElementById('set-ai-key-hint');
-    if (hint) hint.textContent = s.ai_api_key_set ? '· a key is saved' : '· not set';
+    if (hint) hint.textContent = s.ai_api_key_set ? translate('· a key is saved') : translate('· not set');
     // Report branding (white-label)
     set('set-brand-name', s.report_brand_name);
     set('set-brand-color', s.report_brand_color || '#6366f1');
@@ -1172,24 +1192,26 @@ document.getElementById('settings-btn-ai-save')?.addEventListener('click', async
     const res = await fetch(`${API_BASE}/settings`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(aiPayload()),
     });
-    if (res.ok) { toast.show('AI provider saved.', 'success'); document.getElementById('set-ai-key').value = ''; loadSettings(); }
-    else { toast.show('Failed to save AI provider.', 'error'); }
-  } catch (e) { toast.show('Network error.', 'error'); }
+    if (res.ok) { toast.show(translate('AI provider saved.'), 'success'); document.getElementById('set-ai-key').value = ''; loadSettings(); }
+    else { toast.show(translate('Failed to save AI provider.'), 'error'); }
+  } catch (e) { toast.show(translate('Network error.'), 'error'); }
 });
 
 document.getElementById('settings-btn-ai-test')?.addEventListener('click', async () => {
   const st = document.getElementById('ai-status');
-  st.textContent = 'Saving + testing…';
+  st.textContent = translate('Saving + testing…');
   await fetch(`${API_BASE}/settings`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(aiPayload()),
   }).catch(() => {});
   document.getElementById('set-ai-key').value = '';
   try {
     const d = await (await fetch(`${API_BASE}/ai/test`, { method: 'POST' })).json();
-    st.textContent = d.ok ? `✓ AI connected - ${d.model} replied "${d.reply}"` : `✗ ${d.detail || 'test failed'}`;
+    st.textContent = d.ok
+      ? translate('✓ AI connected - {model} replied "{reply}"', { model: d.model, reply: d.reply })
+      : `✗ ${d.detail || translate('test failed')}`;
     st.style.color = d.ok ? 'var(--color-passed)' : 'var(--color-critical)';
-    toast.show(d.ok ? 'AI connected!' : 'AI test failed.', d.ok ? 'success' : 'error');
-  } catch (e) { st.textContent = '✗ Network error.'; }
+    toast.show(d.ok ? translate('AI connected!') : translate('AI test failed.'), d.ok ? 'success' : 'error');
+  } catch (e) { st.textContent = translate('✗ Network error.'); }
 });
 
 // Report branding (white-label) — saved to global settings, applied to reports.
@@ -1206,9 +1228,9 @@ document.getElementById('settings-btn-brand-save')?.addEventListener('click', as
     const res = await fetch(`${API_BASE}/settings`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     });
-    if (st) { st.textContent = res.ok ? '✓ Branding saved.' : '✗ Failed to save.'; st.style.color = res.ok ? 'var(--color-passed)' : 'var(--color-critical)'; }
-    toast.show(res.ok ? 'Report branding saved.' : 'Failed to save branding.', res.ok ? 'success' : 'error');
-  } catch (e) { toast.show('Network error saving branding.', 'error'); }
+    if (st) { st.textContent = res.ok ? translate('✓ Branding saved.') : translate('✗ Failed to save.'); st.style.color = res.ok ? 'var(--color-passed)' : 'var(--color-critical)'; }
+    toast.show(res.ok ? translate('Report branding saved.') : translate('Failed to save branding.'), res.ok ? 'success' : 'error');
+  } catch (e) { toast.show(translate('Network error saving branding.'), 'error'); }
 });
 
 // Settings → Configuration shortcuts.
@@ -1236,7 +1258,7 @@ document.querySelector('.project-nav .tab[data-target="view-compare"]')?.addEven
     if (crawls.length > 1) selPrevious.selectedIndex = 1;
     if (crawls.length < 2) {
       document.getElementById('compare-results').innerHTML =
-        '<div class="cmp-empty">Run this site’s audit at least twice to compare changes over time.</div>';
+        `<div class="cmp-empty">${translate("Run this site’s audit at least twice to compare changes over time.")}</div>`;
     }
   } catch (e) {
     console.error(e);
@@ -1247,11 +1269,11 @@ document.getElementById('compare-btn-run')?.addEventListener('click', async () =
   const latestId = document.getElementById('compare-sel-latest').value;
   const previousId = document.getElementById('compare-sel-previous').value;
   if (!latestId || !previousId) {
-    toast.show('Please select two crawls to compare', 'error');
+    toast.show(translate('Please select two crawls to compare'), 'error');
     return;
   }
   const container = document.getElementById('compare-results');
-  container.innerHTML = '<div class="cmp-empty">Loading comparison…</div>';
+  container.innerHTML = `<div class="cmp-empty">${translate("Loading comparison…")}</div>`;
   try {
     const res = await fetch(`${API_BASE}/compare?crawl1=${previousId}&crawl2=${latestId}`);
     if (!res.ok) throw new Error('Compare failed');
@@ -1285,35 +1307,35 @@ document.getElementById('compare-btn-run')?.addEventListener('click', async () =
 
     container.innerHTML = `
       <div class="cmp-summary-head card">
-        <div class="cmp-crawl"><span class="cmp-crawl-tag">Baseline</span><span class="cmp-crawl-name">${esc(nameOf(previousId))}</span></div>
+        <div class="cmp-crawl"><span class="cmp-crawl-tag">${translate("Baseline")}</span><span class="cmp-crawl-name">${esc(nameOf(previousId))}</span></div>
         <div class="cmp-summary-arrow">→</div>
-        <div class="cmp-crawl"><span class="cmp-crawl-tag">Compared</span><span class="cmp-crawl-name">${esc(nameOf(latestId))}</span></div>
+        <div class="cmp-crawl"><span class="cmp-crawl-tag">${translate("Compared")}</span><span class="cmp-crawl-name">${esc(nameOf(latestId))}</span></div>
         <div class="cmp-net ${netUrls > 0 ? 'up' : netUrls < 0 ? 'down' : ''}">
           <span class="cmp-net-val">${netStr}</span><span class="cmp-net-lbl">URLs</span>
         </div>
       </div>
 
       <div class="cmp-summary">
-        ${tile('Resolved', s.resolved ?? 0, (s.resolved ?? 0) > 0 ? 'passed' : '', 'issues fixed')}
-        ${tile('New issues', s.new ?? 0, (s.new ?? 0) > 0 ? 'warning' : '', 'appeared')}
-        ${tile('Regressions', regs.length, regs.length > 0 ? 'critical' : '', 'new Critical / High')}
-        ${tile('New URLs', u.summary?.new ?? 0, '', 'added pages')}
-        ${tile('Missing URLs', u.summary?.missing ?? 0, (u.summary?.missing ?? 0) > 0 ? 'warning' : '', 'removed pages')}
-        ${tile('Changed URLs', u.summary?.changed ?? 0, '', 'field deltas')}
+        ${tile(translate('Resolved'), s.resolved ?? 0, (s.resolved ?? 0) > 0 ? 'passed' : '', translate('issues fixed'))}
+        ${tile(translate('New issues'), s.new ?? 0, (s.new ?? 0) > 0 ? 'warning' : '', translate('appeared'))}
+        ${tile(translate('Regressions'), regs.length, regs.length > 0 ? 'critical' : '', translate('new Critical / High'))}
+        ${tile(translate('New URLs'), u.summary?.new ?? 0, '', translate('added pages'))}
+        ${tile(translate('Missing URLs'), u.summary?.missing ?? 0, (u.summary?.missing ?? 0) > 0 ? 'warning' : '', translate('removed pages'))}
+        ${tile(translate('Changed URLs'), u.summary?.changed ?? 0, '', translate('field deltas'))}
       </div>
 
-      ${section('Regressions', 'new Critical / High issues', regs.length ? `<div class="cmp-list">${regs.slice(0, 40).map(r => `<div class="cmp-row">
+      ${section(translate('Regressions'), translate('new Critical / High issues'), regs.length ? `<div class="cmp-list">${regs.slice(0, 40).map(r => `<div class="cmp-row">
         <span class="badge badge-${r.severity === 'Critical' ? 'critical' : 'warning'}">${r.severity}</span>
         <span class="mono cmp-url">${esc(r.key)}</span></div>`).join('')}</div>` : '')}
 
-      ${section('Missing pages', 'in baseline, gone from newer', u.missing?.length ? `<div class="cmp-list">${u.missing.slice(0, 40).map(r => `<div class="cmp-row">
-        <span class="status-chip status-err">gone</span><span class="mono cmp-url" title="${esc(r.address)}">${esc(path(r.address))}</span></div>`).join('')}</div>` : '')}
+      ${section(translate('Missing pages'), translate('in baseline, gone from newer'), u.missing?.length ? `<div class="cmp-list">${u.missing.slice(0, 40).map(r => `<div class="cmp-row">
+        <span class="status-chip status-err">${translate("gone")}</span><span class="mono cmp-url" title="${esc(r.address)}">${esc(path(r.address))}</span></div>`).join('')}</div>` : '')}
 
-      ${section('New pages', "didn't exist in the baseline", u.new?.length ? `<div class="cmp-list">${u.new.slice(0, 40).map(r => `<div class="cmp-row">
-        <span class="status-chip status-2xx">new</span><span class="mono cmp-url" title="${esc(r.address)}">${esc(path(r.address))}</span>
+      ${section(translate('New pages'), translate("didn't exist in the baseline"), u.new?.length ? `<div class="cmp-list">${u.new.slice(0, 40).map(r => `<div class="cmp-row">
+        <span class="status-chip status-2xx">${translate("new")}</span><span class="mono cmp-url" title="${esc(r.address)}">${esc(path(r.address))}</span>
         <span class="status-chip ${r.status >= 400 ? 'status-4xx' : r.status >= 300 ? 'status-3xx' : 'status-2xx'}">${r.status ?? ' - '}</span></div>`).join('')}</div>` : '')}
 
-      ${section('Changed pages', '', u.changed?.length ? `<div class="cmp-list">${u.changed.slice(0, 40).map(r => `<div class="cmp-changed">
+      ${section(translate('Changed pages'), '', u.changed?.length ? `<div class="cmp-list">${u.changed.slice(0, 40).map(r => `<div class="cmp-changed">
         <div class="mono cmp-url" title="${esc(r.address)}">${esc(path(r.address))}</div>
         ${r.changes.map(c => `<div class="cmp-delta">
           <span class="cmp-field">${esc(c.label)}</span>
@@ -1324,11 +1346,11 @@ document.getElementById('compare-btn-run')?.addEventListener('click', async () =
       </div>`).join('')}</div>` : '')}
 
       ${!regs.length && !u.new?.length && !u.missing?.length && !u.changed?.length
-        ? '<div class="cmp-nochange">✓ No differences between these two crawls.</div>' : ''}
+        ? `<div class="cmp-nochange">${translate("✓ No differences between these two crawls.")}</div>` : ''}
     `;
   } catch(e) {
-    container.innerHTML = '<div class="cmp-empty">Error loading comparison.</div>';
-    toast.show('Failed to compare crawls', 'error');
+    container.innerHTML = `<div class="cmp-empty">${translate("Error loading comparison.")}</div>`;
+    toast.show(translate('Failed to compare crawls'), 'error');
   }
 });
 
@@ -1346,17 +1368,17 @@ function openFeedback(prefillEmail = '') {
   const ov = document.createElement('div');
   ov.className = 'fb-overlay';
   ov.innerHTML = `
-    <div class="fb-card" role="dialog" aria-modal="true" aria-label="Send feedback">
-      <h2 class="fb-title">Send feedback</h2>
+    <div class="fb-card" role="dialog" aria-modal="true" aria-label="${e2(translate('Send feedback'))}">
+      <h2 class="fb-title">${translate("Send feedback")}</h2>
       <p class="fb-sub">Scrawly is free and built for the SEO community. Tell us what to
         improve, what broke, or what you'd love to see next.</p>
-      <textarea class="fb-text" rows="6" placeholder="Your note, idea, or bug report…"></textarea>
-      <label class="fb-field"><span>Your email (optional, so we can reply)</span>
+      <textarea class="fb-text" rows="6" placeholder="${e2(translate('Your note, idea, or bug report…'))}"></textarea>
+      <label class="fb-field"><span>${translate("Your email (optional, so we can reply)")}</span>
         <input class="fb-email" type="email" value="${e2(prefillEmail)}" placeholder="you@example.com"></label>
       <div class="fb-msg" aria-live="polite"></div>
       <div class="fb-actions">
-        <button class="fb-cancel" type="button">Cancel</button>
-        <button class="fb-send" type="button">Send</button>
+        <button class="fb-cancel" type="button">${translate("Cancel")}</button>
+        <button class="fb-send" type="button">${translate("Send")}</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
@@ -1377,8 +1399,8 @@ function openFeedback(prefillEmail = '') {
     box.className = 'fb-msg fb-err';
     box.innerHTML = `${(msg || 'Could not send right now.').replace(/[<>]/g, '')}
       <div class="fb-fallback">
-        <button type="button" data-fb="mail">Email it instead</button>
-        <button type="button" data-fb="issue">Open a GitHub issue</button>
+        <button type="button" data-fb="mail">${translate("Email it instead")}</button>
+        <button type="button" data-fb="issue">${translate("Open a GitHub issue")}</button>
       </div>`;
     const note = ta.value.trim();
     box.querySelector('[data-fb="mail"]').addEventListener('click', () => openExternal(
@@ -1389,12 +1411,12 @@ function openFeedback(prefillEmail = '') {
   ov.querySelector('.fb-send').addEventListener('click', async (ev) => {
     const msg = ta.value.trim();
     const box = ov.querySelector('.fb-msg');
-    if (!msg) { box.textContent = 'Please write a note first.'; box.className = 'fb-msg fb-err'; return; }
+    if (!msg) { box.textContent = translate('Please write a note first.'); box.className = 'fb-msg fb-err'; return; }
     const btn = ev.currentTarget;
     btn.disabled = true;
-    btn.textContent = 'Sending…';
+    btn.textContent = translate('Sending…');
     box.className = 'fb-msg';
-    box.textContent = 'Sending your note. This can take a few seconds.';
+    box.textContent = translate('Sending your note. This can take a few seconds.');
     try {
       const res = await fetch(`${API_BASE}/feedback`, {
         method: 'POST',
@@ -1404,11 +1426,11 @@ function openFeedback(prefillEmail = '') {
       let data = null;
       try { data = await res.json(); } catch { /* empty body */ }
       if (!res.ok) throw new Error((data && data.detail && data.detail.message) || '');
-      toast.show((data && data.message) || 'Thanks, your note was sent.', 'success');
+      toast.show((data && data.message) || translate('Thanks, your note was sent.'), 'success');
       close();
     } catch (err) {
       btn.disabled = false;
-      btn.textContent = 'Send';
+      btn.textContent = translate('Send');
       fallback(err && err.message);
     }
   });
@@ -1422,6 +1444,15 @@ function bootApp() {
   loadClients();
   loadHome();
   loadSettings();
+  try {
+    const saved = sessionStorage.getItem('scrawly-reopen-settings');
+    if (saved !== null) {
+      sessionStorage.removeItem('scrawly-reopen-settings');
+      document.getElementById('nav-btn-settings').click();
+      const crawlId = JSON.parse(saved);
+      if (Number.isInteger(crawlId)) crawlConsole.start(crawlId, refreshCrawlLists);
+    }
+  } catch { /* session storage is optional */ }
 }
 
 // Start the app for this edition (see edition.js).

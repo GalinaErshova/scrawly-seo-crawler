@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/drawer.js — master-detail: Overview / Inlinks / Outlinks
 const norm = (u) => (u || '').replace(/#.*$/, '').replace(/\/$/, '').toLowerCase();
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => (
@@ -29,11 +30,11 @@ export class Drawer {
   _loadShot() {
     const box = this.panel.querySelector('.dr-shot');
     if (!box) return;
-    box.innerHTML = `<div class="dr-shot-loading"><span class="cc-spin"></span> Rendering ${this.shotDevice} screenshot…</div>`;
+    box.innerHTML = `<div class="dr-shot-loading"><span class="cc-spin"></span> ${t("Rendering {device} screenshot…", { device: t(this.shotDevice) })}</div>`;
     const img = new Image();
     img.className = 'dr-shot-img';
     img.onload = () => { box.innerHTML = ''; box.appendChild(img); };
-    img.onerror = () => { box.innerHTML = '<div class="dr-empty">Could not render this page.</div>'; };
+    img.onerror = () => { box.innerHTML = `<div class="dr-empty">${t("Could not render this page.")}</div>`; };
     img.src = `/api/screenshot?url=${encodeURIComponent(this.data.address)}&device=${this.shotDevice}`;
   }
 
@@ -79,74 +80,77 @@ export class Drawer {
     const microRdfa = [...(d.microdata_types || []), ...(d.rdfa_types || [])];
 
     const tabBtn = (id, label, n) =>
-      `<button class="dr-tab${this.tab === id ? ' active' : ''}" data-tab="${id}">${label}${n != null ? ` <span class="dr-tab-n">${n}</span>` : ''}</button>`;
+      `<button class="dr-tab${this.tab === id ? ' active' : ''}" data-tab="${id}">${t(label)}${n != null ? ` <span class="dr-tab-n">${n}</span>` : ''}</button>`;
 
     const overview = `
-      <h3>SERP Preview</h3>
+      <h3>${t("SERP Preview")}</h3>
       <div class="serp-preview">
         <div class="serp-url">${esc(host)} › ${esc(pathOf(d.address))}</div>
-        <div class="serp-title">${esc(d.title || 'No title found')}</div>
-        <div class="serp-desc">${esc(d.meta_desc || 'No meta description found for this page.')}</div>
+        <div class="serp-title">${esc(d.title || t("No title found"))}</div>
+        <div class="serp-desc">${esc(d.meta_desc || t("No meta description found for this page."))}</div>
       </div>
       <div class="serp-meta">
-        <span class="${titleFit ? 'ok' : 'warn'}">Title ${titleLen} chars · ~${titlePx}px ${titleFit ? '✓' : '· may truncate'}</span>
-        <span class="${metaFit ? 'ok' : 'warn'}">Meta ${metaLen} chars ${metaFit ? '· good for AI ✓' : (metaLen ? '· too thin for AI' : '· missing')}</span>
+        <span class="${titleFit ? 'ok' : 'warn'}">${t("Title {count} chars · ~{pixels}px", { count: titleLen, pixels: titlePx })} ${titleFit ? '✓' : t("· may truncate")}</span>
+        <span class="${metaFit ? 'ok' : 'warn'}">${t("Meta {count} chars", { count: metaLen })} ${metaFit ? t("· good for AI ✓") : (metaLen ? t("· too thin for AI") : t("· missing"))}</span>
       </div>
 
-      <h3>Technical</h3>
+      <h3>${t("Technical")}</h3>
       <dl class="detail-grid">
-        <dt>Status</dt><dd><span class="badge badge-${statusColor}">${d.status ?? ' - '}</span></dd>
-        <dt>Indexable</dt><dd>${d.indexable === false ? 'No - ' + esc(d.indexability_reason || '') : 'Yes'}</dd>
+        <dt>${t("Status")}</dt><dd><span class="badge badge-${statusColor}">${d.status ?? ' - '}</span></dd>
+        <dt>${t("Indexable")}</dt><dd>${d.indexable === false ? t('No') + ' – ' + esc(d.indexability_reason || '') : t("Yes")}</dd>
         <dt>Canonical</dt><dd>${esc(d.canonical || ' - ')}</dd>
         <dt>Meta Robots</dt><dd>${esc(d.meta_robots || ' - ')}</dd>
         <dt>X-Robots-Tag</dt><dd>${esc(d.x_robots || ' - ')}</dd>
         <dt>H1</dt><dd>${esc(Array.isArray(d.h1) ? d.h1.join(' | ') : (d.h1 || ' - '))}</dd>
-        <dt>Word count</dt><dd>${d.word_count ?? ' - '}</dd>
-        <dt>Readability</dt><dd>${d.readability == null ? ' - ' : d.readability + ' (Flesch)'}</dd>
-        <dt>Text / Code</dt><dd>${d.text_to_code == null ? ' - ' : Math.round(d.text_to_code * 100) + '%'}</dd>
-        <dt>Forms</dt><dd>${d.forms_count ?? 0}</dd>
+        <dt>${t("Word count")}</dt><dd>${d.word_count ?? ' - '}</dd>
+        <dt>${t("Readability")}</dt><dd>${d.readability == null ? ' - ' : d.readability + ' (Flesch)'}</dd>
+        <dt>${t("Text / Code")}</dt><dd>${d.text_to_code == null ? ' - ' : Math.round(d.text_to_code * 100) + '%'}</dd>
+        <dt>${t("Forms")}</dt><dd>${d.forms_count ?? 0}</dd>
         <dt>Schema (JSON-LD)</dt><dd>${schemaTypes.length ? esc(schemaTypes.join(', ')) : ' - '}</dd>
         <dt>Microdata / RDFa</dt><dd>${microRdfa.length ? esc(microRdfa.join(', ')) : ' - '}</dd>
         <dt>Last-Modified</dt><dd>${esc(d.last_modified || ' - ')}</dd>
-        <dt>Pagination</dt><dd>${(d.prev_url || d.next_url) ? `${d.prev_url ? 'prev ✓' : ''} ${d.next_url ? 'next ✓' : ''}`.trim() : ' - '}</dd>
+        <dt>${t("Pagination")}</dt><dd>${(d.prev_url || d.next_url) ? `${d.prev_url ? 'prev ✓' : ''} ${d.next_url ? 'next ✓' : ''}`.trim() : ' - '}</dd>
         <dt>AMP</dt><dd>${d.amp_url ? esc(d.amp_url) : ' - '}</dd>
-        <dt>Mobile alternate</dt><dd>${d.mobile_alternate ? esc(d.mobile_alternate) : ' - '}</dd>
-        <dt>Cookies set</dt><dd>${(d.cookies && d.cookies.length) ? `${d.cookies.length} - ${esc(d.cookies.join(', '))}` : ' - '}</dd>
-        <dt>Depth</dt><dd>${d.depth ?? ' - '}</dd>
-        <dt>Inlinks / Outlinks</dt><dd>${inlinks.length} / ${outlinks.length}</dd>
-        <dt>Internal authority</dt><dd>${d.pagerank == null ? ' - ' : d.pagerank + ' / 100 (PageRank)'}</dd>
+        <dt>${t("Mobile alternate")}</dt><dd>${d.mobile_alternate ? esc(d.mobile_alternate) : ' - '}</dd>
+        <dt>${t("Cookies set")}</dt><dd>${(d.cookies && d.cookies.length) ? `${d.cookies.length} - ${esc(d.cookies.join(', '))}` : ' - '}</dd>
+        <dt>${t("Depth")}</dt><dd>${d.depth ?? ' - '}</dd>
+        <dt>${t("Inlinks / Outlinks")}</dt><dd>${inlinks.length} / ${outlinks.length}</dd>
+        <dt>${t("Internal authority")}</dt><dd>${d.pagerank == null ? ' - ' : d.pagerank + ' / 100 (PageRank)'}</dd>
         <dt>LCP / CLS</dt><dd>${d.lcp_s ?? ' - '}s / ${d.cls ?? ' - '}</dd>
-        ${d.segment ? `<dt>Segment</dt><dd>${esc(d.segment)}</dd>` : ''}
-        ${d.ga4 ? `<dt>GA4 (28d)</dt><dd>${d.ga4.sessions ?? 0} sessions · ${d.ga4.engagedSessions ?? 0} engaged · ${d.ga4.screenPageViews ?? 0} views · ${d.ga4.conversions ?? 0} conv.</dd>` : ''}
-        ${d.pdf_properties ? `<dt>PDF</dt><dd>${d.pdf_properties.page_count ?? '?'} pages${d.pdf_properties.author ? ' · ' + esc(d.pdf_properties.author) : ''}${d.pdf_properties.producer ? ' · ' + esc(d.pdf_properties.producer) : ''}</dd>` : ''}
-        ${(d.js_errors && d.js_errors.length) ? `<dt>JS console</dt><dd>${d.js_errors.length} error(s): ${esc(d.js_errors.slice(0, 3).join(' · '))}</dd>` : ''}
+        ${d.segment ? `<dt>${t("Segment")}</dt><dd>${esc(d.segment)}</dd>` : ''}
+        ${d.ga4 ? `<dt>${t("GA4 (28d)")}</dt><dd>${t("{sessions} sessions · {engaged} engaged · {views} views · {conversions} conv.", {
+          sessions: esc(d.ga4.sessions ?? 0), engaged: esc(d.ga4.engagedSessions ?? 0),
+          views: esc(d.ga4.screenPageViews ?? 0), conversions: esc(d.ga4.conversions ?? 0),
+        })}</dd>` : ''}
+        ${d.pdf_properties ? `<dt>PDF</dt><dd>${t('{count} pages', { count: esc(d.pdf_properties.page_count ?? '?') })}${d.pdf_properties.author ? ' · ' + esc(d.pdf_properties.author) : ''}${d.pdf_properties.producer ? ' · ' + esc(d.pdf_properties.producer) : ''}</dd>` : ''}
+        ${(d.js_errors && d.js_errors.length) ? `<dt>${t("JS console")}</dt><dd>${t('{count} errors:', { count: d.js_errors.length })} ${esc(d.js_errors.slice(0, 3).join(' · '))}</dd>` : ''}
       </dl>
       ${(d.spelling && d.spelling.length) ? `
-        <h3>Spelling &amp; grammar <span class="dr-tab-n">${d.spelling.length}</span></h3>
+        <h3>${t("Spelling & grammar")} <span class="dr-tab-n">${d.spelling.length}</span></h3>
         <ul class="dr-spell">
           ${d.spelling.slice(0, 40).map(s => `<li>
             <span class="dr-spell-word">${esc(s.word)}</span>
-            <span class="dr-spell-kind dr-spell-${s.kind === 'spelling' ? 'sp' : 'gr'}">${esc(s.kind)}</span>
+            <span class="dr-spell-kind dr-spell-${s.kind === 'spelling' ? 'sp' : 'gr'}">${esc(t(s.kind))}</span>
             ${(s.suggestions && s.suggestions.length) ? `<span class="dr-spell-sug">→ ${esc(s.suggestions.slice(0, 3).join(', '))}</span>` : ''}
           </li>`).join('')}
         </ul>` : ''}`;
 
     const linkList = (items, render) => items.length
       ? `<ul class="dr-links">${items.map(render).join('')}</ul>`
-      : `<p class="dr-empty">None found.</p>`;
+      : `<p class="dr-empty">${t("None found.")}</p>`;
 
     const inlinksHtml = linkList(inlinks, (r) =>
       `<li data-nav="${esc(r.address)}"><span class="mono">${esc(pathOf(r.address))}</span><span class="dr-link-title">${esc(r.title || '')}</span></li>`);
 
     const outlinksHtml = linkList(outlinks, (o) =>
-      `<li${o.crawled ? ` data-nav="${esc(o.url)}"` : ''}><span class="mono">${esc(pathOf(o.url))}</span>${o.crawled ? '<span class="badge badge-passed">crawled</span>' : '<span class="badge badge-notice">external/uncrawled</span>'}</li>`);
+      `<li${o.crawled ? ` data-nav="${esc(o.url)}"` : ''}><span class="mono">${esc(pathOf(o.url))}</span>${o.crawled ? `<span class="badge badge-passed">${t("crawled")}</span>` : `<span class="badge badge-notice">${t("external/uncrawled")}</span>`}</li>`);
 
     this.panel.innerHTML = `
       <div class="drawer-header">
         <div style="min-width:0;">
           <h2 class="dr-addr mono">${esc(d.address)}</h2>
         </div>
-        <button class="drawer-close" aria-label="Close panel">
+        <button class="drawer-close" aria-label="${t("Close panel")}">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -162,8 +166,8 @@ export class Drawer {
         <div class="dr-pane" data-pane="outlinks" ${this.tab === 'outlinks' ? '' : 'hidden'}>${outlinksHtml}</div>
         <div class="dr-pane" data-pane="screenshot" ${this.tab === 'screenshot' ? '' : 'hidden'}>
           <div class="dr-shot-controls">
-            <button class="dr-shot-dev${this.shotDevice === 'desktop' ? ' active' : ''}" data-dev="desktop">Desktop</button>
-            <button class="dr-shot-dev${this.shotDevice === 'mobile' ? ' active' : ''}" data-dev="mobile">Mobile</button>
+            <button class="dr-shot-dev${this.shotDevice === 'desktop' ? ' active' : ''}" data-dev="desktop">${t("Desktop")}</button>
+            <button class="dr-shot-dev${this.shotDevice === 'mobile' ? ' active' : ''}" data-dev="mobile">${t("Mobile")}</button>
           </div>
           <div class="dr-shot"></div>
         </div>

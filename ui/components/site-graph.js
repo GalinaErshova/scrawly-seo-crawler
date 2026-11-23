@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/site-graph.js
 // Advanced, interactive site-architecture visualization.
 // Layouts:
@@ -49,32 +50,32 @@ export class SiteGraph {
   _shell() {
     this.container.innerHTML = `
       <div class="sg-controls">
-        <div class="sg-ctl"><label>Layout</label>
+        <div class="sg-ctl"><label>${t("Layout")}</label>
           <select class="sg-layout">
-            <option value="arch">Architecture map (force-directed)</option>
-            <option value="force3d">Architecture map (3D)</option>
-            <option value="directory">Architecture tree (branches)</option>
-            <option value="force">Crawl map (radial)</option>
-            <option value="tree">Crawl-depth tree</option>
-            <option value="clusters">Content clusters</option>
-            <option value="redirects">Redirect chains</option>
+            <option value="arch">${t("Architecture map (force-directed)")}</option>
+            <option value="force3d">${t("Architecture map (3D)")}</option>
+            <option value="directory">${t("Architecture tree (branches)")}</option>
+            <option value="force">${t("Crawl map (radial)")}</option>
+            <option value="tree">${t("Crawl-depth tree")}</option>
+            <option value="clusters">${t("Content clusters")}</option>
+            <option value="redirects">${t("Redirect chains")}</option>
           </select></div>
-        <div class="sg-ctl sg-metric-ctl"><label>Size by</label>
+        <div class="sg-ctl sg-metric-ctl"><label>${t("Size by")}</label>
           <select class="sg-size">
-            <option value="pagerank">Authority (PageRank)</option>
-            <option value="inlinks">Inlinks</option>
-            <option value="words">Word count</option>
-            <option value="uniform">Uniform</option>
+            <option value="pagerank">${t("Authority (PageRank)")}</option>
+            <option value="inlinks">${t("Inlinks")}</option>
+            <option value="words">${t("Word count")}</option>
+            <option value="uniform">${t("Uniform")}</option>
           </select></div>
-        <div class="sg-ctl sg-color-ctl"><label>Colour by</label>
+        <div class="sg-ctl sg-color-ctl"><label>${t("Colour by")}</label>
           <select class="sg-color">
-            <option value="indexable">Indexability</option>
-            <option value="status">Status code</option>
-            <option value="issues">Issues (severity)</option>
-            <option value="depth">Crawl depth</option>
-            <option value="segment">Segment</option>
+            <option value="indexable">${t("Indexability")}</option>
+            <option value="status">${t("Status code")}</option>
+            <option value="issues">${t("Issues (severity)")}</option>
+            <option value="depth">${t("Crawl depth")}</option>
+            <option value="segment">${t("Segment")}</option>
           </select></div>
-        <div class="sg-ctl sg-grow"><input class="sg-search" type="text" placeholder="Search / highlight URLs…"></div>
+        <div class="sg-ctl sg-grow"><input class="sg-search" type="text" placeholder="${t("Search / highlight URLs…")}"></div>
       </div>
       <div class="sg-stats"></div>
       <div class="sg-stage"><div class="sg-canvas"></div><div class="sg-legend"></div></div>
@@ -109,7 +110,7 @@ export class SiteGraph {
     this.stage.innerHTML = '';
     this._node = null; this._link = null; this._searchSel = null; this._searchId = null;
     const n = this.data.nodes.length;
-    if (!n) return this._msg('No crawled pages to graph yet.');
+    if (!n) return this._msg(t("No crawled pages to graph yet."));
     this._stats();
     if (this.layout === 'redirects') return this._redirects();
     if (this.layout === 'arch') return this._archForce();
@@ -177,7 +178,7 @@ export class SiteGraph {
     const nonidx = N.filter(d => !d.indexable).length;
     const withIssues = N.filter(d => d.issues > 0).length;
     const maxD = Math.max(0, ...N.map(d => d.depth || 0));
-    const chip = (label, v, cls = '') => `<span class="sg-chip ${cls}">${v}<small>${label}</small></span>`;
+    const chip = (label, v, cls = '') => `<span class="sg-chip ${cls}">${v}<small>${t(label)}</small></span>`;
     this.container.querySelector('.sg-stats').innerHTML =
       chip('pages', N.length) + chip('links', this.data.edges.length) +
       chip('max depth', maxD) + chip('with issues', withIssues, withIssues ? 'warn' : '') +
@@ -187,32 +188,35 @@ export class SiteGraph {
 
   _legend() {
     const box = this.container.querySelector('.sg-legend');
+    const metric = {
+      pagerank: t('Authority (PageRank)'), inlinks: t('Inlinks'), words: t('Word count'),
+    }[this.sizeBy];
     if (this.layout === 'clusters') {
       const cats = this._catScale ? this._catScale.domain() : [];
-      box.innerHTML = `<div class="sg-leg sg-note">Content sections (top-level paths)</div>` +
+      box.innerHTML = `<div class="sg-leg sg-note">${t("Content sections (top-level paths)")}</div>` +
         cats.map(c => `<div class="sg-leg"><span class="sg-sw sg-dot" style="background:${this._catScale(c)}"></span>/${c === '(root)' ? '' : esc(c)}</div>`).join('') +
-        `<div class="sg-leg-sep"></div><div class="sg-leg sg-note">Nested = hierarchy · size = ${this.sizeBy === 'uniform' ? 'equal' : this.sizeBy}</div>`;
+        `<div class="sg-leg-sep"></div><div class="sg-leg sg-note">${t("Nested = hierarchy · size = {metric}", { metric: metric || t("equal") })}</div>`;
       return;
     }
     const row = (c, t, shape = 'dot') => `<div class="sg-leg"><span class="sg-sw sg-${shape}" style="background:${c}"></span>${t}</div>`;
     let items = '';
-    if (this.colorBy === 'indexable') items = row(OK, 'Indexable') + row(RED, 'Non-indexable / broken');
-    else if (this.colorBy === 'status') items = row(OK, '2xx') + row(ORANGE, '3xx redirect') + row(RED, '4xx/5xx');
-    else if (this.colorBy === 'issues') items = Object.entries(SEV_COLOR).map(([k, c]) => row(c, k)).join('') + row(OK, 'No issues');
+    if (this.colorBy === 'indexable') items = row(OK, t('Indexable')) + row(RED, t("Non-indexable / broken"));
+    else if (this.colorBy === 'status') items = row(OK, '2xx') + row(ORANGE, t("3xx redirect")) + row(RED, '4xx/5xx');
+    else if (this.colorBy === 'issues') items = Object.entries(SEV_COLOR).map(([k, c]) => row(c, t(k))).join('') + row(OK, t("No issues"));
     else if (this.colorBy === 'segment') {
       const names = this._segScale().domain();
       items = names.length
-        ? names.map(n => row(this._segScale()(n), esc(n))).join('') + row(GRAY, 'Unsegmented')
-        : `<div class="sg-leg sg-note">No segments defined - add rules under Configuration → Segments.</div>`;
+        ? names.map(n => row(this._segScale()(n), esc(n))).join('') + row(GRAY, t("Unsegmented"))
+        : `<div class="sg-leg sg-note">${t("No segments defined - add rules under Configuration → Segments.")}</div>`;
     }
-    else items = row(d3.interpolateBlues(0.4), 'Shallow') + row(d3.interpolateBlues(0.95), 'Deep');
-    if (this.layout === 'arch') items = `<div class="sg-leg sg-note">Home centre · sections branch out by URL architecture</div>` + `<div class="sg-leg"><span class="sg-sw sg-ring" style="border-color:#94a3b8;background:var(--bg-surface)"></span>Section (hollow)</div>` + items;
-    else if (this.layout === 'force') items = `<div class="sg-leg sg-note">Home centre · fans out by crawl path</div>` + items;
-    else if (this.layout === 'force3d') items = `<div class="sg-leg sg-note">3D · drag to rotate, scroll to zoom</div>` + items;
+    else items = row(d3.interpolateBlues(0.4), t("Shallow")) + row(d3.interpolateBlues(0.95), t("Deep"));
+    if (this.layout === 'arch') items = `<div class="sg-leg sg-note">${t("Home centre · sections branch out by URL architecture")}</div>` + `<div class="sg-leg"><span class="sg-sw sg-ring" style="border-color:#94a3b8;background:var(--bg-surface)"></span>${t("Section (hollow)")}</div>` + items;
+    else if (this.layout === 'force') items = `<div class="sg-leg sg-note">${t("Home centre · fans out by crawl path")}</div>` + items;
+    else if (this.layout === 'force3d') items = `<div class="sg-leg sg-note">${t("3D · drag to rotate, scroll to zoom")}</div>` + items;
     items += `<div class="sg-leg-sep"></div>` +
-      `<div class="sg-leg"><span class="sg-sw sg-ring" style="border-color:${PURPLE}"></span>Canonicalized</div>` +
-      `<div class="sg-leg"><span class="sg-sw sg-ring" style="border-color:#eab308"></span>Orphan (0 inlinks)</div>` +
-      `<div class="sg-leg sg-note">Size = ${this.sizeBy === 'uniform' ? 'fixed' : this.sizeBy}</div>`;
+      `<div class="sg-leg"><span class="sg-sw sg-ring" style="border-color:${PURPLE}"></span>${t("Canonicalized")}</div>` +
+      `<div class="sg-leg"><span class="sg-sw sg-ring" style="border-color:#eab308"></span>${t("Orphan (0 inlinks)")}</div>` +
+      `<div class="sg-leg sg-note">${t("Size = {metric}", { metric: metric || t("fixed size") })}</div>`;
     box.innerHTML = items;
   }
 
@@ -295,8 +299,8 @@ export class SiteGraph {
       .attr('dy', d => -rOf(d) - 4)
       .text(d => {
         if (!d.isDir && !labelPages) return '';
-        const t = d.id === rootId ? 'Home' : (d.isDir ? '/' + d.name : (d.name || pathOf(d.id)));
-        return t.length > 24 ? t.slice(0, 24) + '…' : t;
+        const label = d.id === rootId ? t("Home") : (d.isDir ? '/' + d.name : (d.name || pathOf(d.id)));
+        return label.length > 24 ? label.slice(0, 24) + '…' : label;
       });
 
     this._node = node; this._link = link; this._adj = this._adjacency(links);
@@ -317,9 +321,9 @@ export class SiteGraph {
   }
 
   _showDirTip(ev, d) {
-    this.tip.innerHTML = `<div class="sg-tip-h mono"><span class="sg-tip-url">${d.id === this._rootId ? 'Home' : '/' + esc(d.name)}</span></div>` +
-      `<div class="sg-tip-r"><span>Type</span><b>Section</b></div>` +
-      `<div class="sg-tip-r"><span>Pages under</span><b>${d.leaves}</b></div>`;
+    this.tip.innerHTML = `<div class="sg-tip-h mono"><span class="sg-tip-url">${d.id === this._rootId ? t("Home") : '/' + esc(d.name)}</span></div>` +
+      `<div class="sg-tip-r"><span>${t("Type")}</span><b>${t("Section")}</b></div>` +
+      `<div class="sg-tip-r"><span>${t("Pages under")}</span><b>${d.leaves}</b></div>`;
     this.tip.style.display = 'block'; this._moveTip(ev);
   }
 
@@ -392,7 +396,7 @@ export class SiteGraph {
 
   // ---- 3D crawl diagram (three.js via 3d-force-graph) ----
   async _force3d() {
-    this._msg('<span class="sg-spin3d"></span> Loading 3D engine…');
+    this._msg(`<span class="sg-spin3d"></span> ${t("Loading 3D engine…")}`);
     const mod = await import('3d-force-graph');
     const ForceGraph3D = mod.default;
     if (this.layout !== 'force3d') return;   // user switched away while loading
@@ -419,10 +423,10 @@ export class SiteGraph {
       .nodeLabel(d => {
         const p = pathOf(d.id);
         if (!d.node) return `<div style="font:12px system-ui;padding:4px 6px;background:#111827cc;border-radius:6px;color:#fff">
-          <b>${d.id === rootId ? 'Home' : '/' + esc(d.name)}</b><br><span style="opacity:.7">section · ${d.leaves ?? 0} pages</span></div>`;
+          <b>${d.id === rootId ? t("Home") : '/' + esc(d.name)}</b><br><span style="opacity:.7">${t("section · {count} pages", { count: d.leaves ?? 0 })}</span></div>`;
         return `<div style="font:12px system-ui;padding:4px 6px;background:#111827cc;border-radius:6px;color:#fff">
           <b>${esc((d.node.title || '').slice(0, 60) || p)}</b><br><span style="opacity:.7">${esc(p)}</span><br>
-          depth ${esc(d.node.depth ?? ' - ')} · authority ${esc(d.node.pagerank ?? ' - ')} · ${d.node.indexable ? 'indexable' : 'not indexable'}</div>`;
+          ${t('depth {value}', { value: esc(d.node.depth ?? ' - ') })} · ${t('authority {value}', { value: esc(d.node.pagerank ?? ' - ') })} · ${t(d.node.indexable ? 'indexable' : 'not indexable')}</div>`;
       })
       .linkColor(() => '#8a93a5')
       .linkOpacity(0.35)
@@ -482,13 +486,13 @@ export class SiteGraph {
       ['Path', pathOf(d.id)], ['Status', d.status ?? ' - '], ['Depth', d.depth ?? ' - '],
       ['Inlinks / Outlinks', `${d.inlinks ?? 0} / ${d.outlinks ?? 0}`],
       ['Authority', d.pagerank == null ? ' - ' : `${d.pagerank}/100`], ['Words', d.words ?? ' - '],
-      ['Indexable', d.indexable ? 'Yes' : 'No'],
+      ['Indexable', t(d.indexable ? 'Yes' : 'No')],
     ];
-    if (d.canonicalized) rows.push(['Canonical', 'points elsewhere']);
-    if (d.orphan) rows.push(['⚠ Orphan', '0 inlinks']);
-    if (d.issues) rows.push(['Issues', `${d.issues} (worst: ${d.severity})`]);
+    if (d.canonicalized) rows.push(['Canonical', t("points elsewhere")]);
+    if (d.orphan) rows.push(['⚠ Orphan', t('0 inlinks')]);
+    if (d.issues) rows.push(['Issues', t("{count} (worst: {severity})", { count: d.issues, severity: t(d.severity) })]);
     this.tip.innerHTML = `<div class="sg-tip-h mono">${d.title ? esc(d.title) + '<br>' : ''}<span class="sg-tip-url">${esc(d.id)}</span></div>` +
-      rows.map(([k, v]) => `<div class="sg-tip-r"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
+      rows.map(([k, v]) => `<div class="sg-tip-r"><span>${esc(t(k))}</span><b>${esc(v)}</b></div>`).join('');
     this.tip.style.display = 'block'; this._moveTip(ev);
   }
   _moveTip(ev) {
@@ -621,7 +625,7 @@ export class SiteGraph {
       .attr('font-weight', d => d.depth === 0 ? 700 : (d.children ? 600 : 400))
       .attr('dy', '0.31em').attr('x', d => (d.children ? -1 : 1) * (rad(d) + 6))
       .attr('text-anchor', d => d.children ? 'end' : 'start')
-      .text(d => { const t = d.depth === 0 ? 'Home' : (d.data.name || pathOf(d.data.id || '')); return t.length > 40 ? t.slice(0, 40) + '…' : t; });
+      .text(d => { const label = d.depth === 0 ? t("Home") : (d.data.name || pathOf(d.data.id || '')); return label.length > 40 ? label.slice(0, 40) + '…' : label; });
 
     this._searchSel = node.selectAll('circle');
     this._searchId = (d) => (d && d.data && d.data.node) ? d.data.node.id : (d.data.id || '');
@@ -639,7 +643,7 @@ export class SiteGraph {
 
   _redirects() {
     const chains = this.data.nodes.filter(n => n.redirect);
-    if (!chains.length) return this._msg('No redirects found in this crawl. 🎉');
+    if (!chains.length) return this._msg(t("No redirects found in this crawl. 🎉"));
     this.stage.innerHTML = `<div class="sg-redir">${chains.map(n =>
       `<div class="sg-redir-row" role="button" tabindex="0" data-id="${esc(n.id)}"><span class="badge badge-warning">${esc(n.status)}</span><span class="mono">${esc(pathOf(n.id))}</span></div>`).join('')}</div>`;
     this.stage.querySelectorAll('.sg-redir-row').forEach(r => {

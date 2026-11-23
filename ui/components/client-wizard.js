@@ -2,6 +2,7 @@
 // Per-client onboarding: Details → auto-detect stack → choose a connection
 // method → Done. Any website connects (URL-only works for every stack); the
 // WordPress Connector additionally unlocks guarded fixes + agentic features.
+import { localize, t } from '../i18n.js';
 import { toast } from './toast.js';
 import { saveDownload } from './external.js';
 
@@ -61,9 +62,9 @@ export class ClientWizard {
   async saveDetails() {
     const name = this.container.querySelector('#cw-name').value.trim();
     const url = this.container.querySelector('#cw-url').value.trim();
-    if (!name) { toast.show('Enter a client name.', 'error'); return false; }
+    if (!name) { toast.show(t('Enter a client name.'), 'error'); return false; }
     if (!/^https?:\/\//.test(url)) {
-      toast.show('Enter a valid Site URL starting with https://', 'error');
+      toast.show(t('Enter a valid Site URL starting with https://'), 'error');
       return false;
     }
     try {
@@ -77,13 +78,13 @@ export class ClientWizard {
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        toast.show(e.detail || 'Could not save client.', 'error');
+        toast.show(e.detail || t('Could not save client.'), 'error');
         return false;
       }
       this.client = await res.json();
       return true;
     } catch (e) {
-      toast.show('Network error saving client.', 'error');
+      toast.show(t('Network error saving client.'), 'error');
       return false;
     }
   }
@@ -91,7 +92,7 @@ export class ClientWizard {
   /** Fingerprint the site → recommend a method + remember the stack for presets. */
   async autoDetect() {
     const chip = this.container.querySelector('#cw-detect-chip');
-    if (chip) chip.innerHTML = '<span class="cw-detecting">Checking what the site is built with…</span>';
+    if (chip) chip.innerHTML = `<span class="cw-detecting">${t('Checking what the site is built with…')}</span>`;
     try {
       const r = await fetch(`${this.apiBase}/clients/${this.client.id}/detect`, { method: 'POST' });
       if (!r.ok) throw new Error('detect failed');
@@ -113,9 +114,9 @@ export class ClientWizard {
     const chip = this.container.querySelector('#cw-detect-chip');
     if (chip) {
       if (this.detected && this.detected.stack) {
-        const lbl = STACK_LABEL[this.detected.stack] || this.detected.stack;
+        const lbl = t(STACK_LABEL[this.detected.stack]) || this.detected.stack;
         const conf = Math.round((this.detected.confidence || 0) * 100);
-        chip.innerHTML = `<span class="cw-stack-chip">Detected: <b>${esc(lbl)}</b> · ${conf}% · settings picked for you</span>`;
+        chip.innerHTML = `<span class="cw-stack-chip">${t('Detected:')} <b>${esc(lbl)}</b> · ${conf}% ${t('· settings picked for you')}</span>`;
       } else {
         chip.innerHTML = '';
       }
@@ -159,8 +160,13 @@ export class ClientWizard {
           <ol class="cw-steps">
             <li><button type="button" class="btn btn-secondary btn-sm" id="cw-plugin-dl">⬇ Download plugin (.zip)</button>
               <span class="cw-hint">6 KB · single file</span></li>
-            <li>In <strong>wp-admin → Plugins → Add New → Upload Plugin</strong>, upload &amp; <strong>Activate</strong>.</li>
-            <li>Open the <strong>Scrawly</strong> menu, copy the <strong>Connection Key</strong>, paste below.</li>
+            <li>${t('In {path}, upload the plugin and click {activate}.', {
+              path: `<strong>${t('wp-admin → Plugins → Add New → Upload Plugin')}</strong>`,
+              activate: `<strong>${t('Activate')}</strong>`,
+            })}</li>
+            <li>${t('Open the {app} menu, copy the {key}, paste below.', {
+              app: '<strong>Scrawly</strong>', key: `<strong>${t('Connection Key')}</strong>`,
+            })}</li>
           </ol>
           <div class="form-group"><label>Site URL</label>
             <input type="url" id="cw-wp-url" value="${esc(site)}"></div>
@@ -173,13 +179,14 @@ export class ClientWizard {
             <span id="cw-conn-status" class="cw-status"></span></div>`,
       connector_file: () => `
         <div class="cw-mp">
-          <p>Prove you control <b>${esc(site)}</b> by placing a verification file at its root. Universal - works on any host.</p>
+          <p>Prove you control <b data-no-translate>${esc(site)}</b> by placing a verification file at its root. Universal - works on any host.</p>
           <div id="cw-vf-body" class="cw-vf">loading token…</div>
           <div class="cw-actions"><button class="btn btn-primary" id="cw-verify">Verify ownership</button>
             <span id="cw-conn-status" class="cw-status"></span></div>
         </div>`,
     };
     panel.innerHTML = (builders[m] || builders.url_only)();
+    localize(panel);
     this._wireMethodPanel(m);
   }
 
@@ -188,25 +195,29 @@ export class ClientWizard {
     if (m === 'wp_connector') {
       $('#cw-plugin-dl')?.addEventListener('click', async () => {
         const outcome = await saveDownload(`${this.apiBase}/connector/download`, 'scrawly-connector.zip');
-        if (outcome === 'saved') toast.show('Plugin saved. Upload it in WordPress under Plugins, Add New.', 'success');
-        else if (outcome === 'failed') toast.show('Could not save the plugin. Please try again.', 'error');
+        if (outcome === 'saved') toast.show(t('Plugin saved. Upload it in WordPress under Plugins, Add New.'), 'success');
+        else if (outcome === 'failed') toast.show(t('Could not save the plugin. Please try again.'), 'error');
       });
       $('#cw-test')?.addEventListener('click', () => this.testConnection());
       $('#cw-key-toggle')?.addEventListener('click', () => {
         const inp = $('#cw-key'); const show = inp.type === 'password';
         inp.type = show ? 'text' : 'password';
-        $('#cw-key-toggle').textContent = show ? 'Hide' : 'Show';
+        $('#cw-key-toggle').textContent = show ? t('Hide') : t('Show');
       });
     } else if (m === 'connector_file') {
       try {
-        const t = await (await fetch(`${this.apiBase}/clients/${this.client.id}/verify-token`)).json();
+        const token = await (await fetch(`${this.apiBase}/clients/${this.client.id}/verify-token`)).json();
         const body = $('#cw-vf-body');
         if (body) body.innerHTML = `
           <div class="cw-vf-file"><span class="cw-vf-label">File</span>
-            <code class="mono">${esc(t.path)}</code></div>
+            <code class="mono">${esc(token.path)}</code></div>
           <div class="cw-vf-file"><span class="cw-vf-label">Contents</span>
-            <code class="mono">${esc(t.token)}</code></div>
-          <p class="cw-note">Or add <code>&lt;meta name="scrawly-verify" content="${esc(t.token)}"&gt;</code> to your homepage <code>&lt;head&gt;</code>.</p>`;
+            <code class="mono">${esc(token.token)}</code></div>
+          <p class="cw-note">${t('Or add {tag} to the {head} section of your home page.', {
+            tag: `<code>&lt;meta name="scrawly-verify" content="${esc(token.token)}"&gt;</code>`,
+            head: '<code>&lt;head&gt;</code>',
+          })}</p>`;
+        localize(body);
       } catch { /* ignore */ }
       $('#cw-verify')?.addEventListener('click', () => this.verifyFile());
     }
@@ -214,18 +225,18 @@ export class ClientWizard {
 
   async verifyFile() {
     const st = this.container.querySelector('#cw-conn-status');
-    st.className = 'cw-status'; st.textContent = 'Checking…';
+    st.className = 'cw-status'; st.textContent = t('Checking…');
     try {
       const r = await fetch(`${this.apiBase}/clients/${this.client.id}/verify-file`, { method: 'POST' });
       const d = await r.json();
       if (d.verified) {
-        st.className = 'cw-status cw-status-ok'; st.textContent = '✓ Ownership verified';
-        toast.show('Ownership verified!', 'success');
+        st.className = 'cw-status cw-status-ok'; st.textContent = t('✓ Ownership verified');
+        toast.show(t('Ownership verified!'), 'success');
       } else {
-        st.className = 'cw-status cw-status-err'; st.textContent = `✗ ${d.detail || 'Not found yet.'}`;
+        st.className = 'cw-status cw-status-err'; st.textContent = `✗ ${d.detail || t('Not found yet.')}`;
       }
     } catch (e) {
-      st.className = 'cw-status cw-status-err'; st.textContent = 'Network error.';
+      st.className = 'cw-status cw-status-err'; st.textContent = t('Network error.');
     }
   }
 
@@ -233,8 +244,8 @@ export class ClientWizard {
     const key = this.container.querySelector('#cw-key').value.trim();
     const wpUrl = this.container.querySelector('#cw-wp-url').value.trim();
     const statusEl = this.container.querySelector('#cw-conn-status');
-    if (!key) { toast.show('Paste the Connection Key from the plugin.', 'error'); return; }
-    statusEl.className = 'cw-status'; statusEl.textContent = 'Testing connection…';
+    if (!key) { toast.show(t('Paste the Connection Key from the plugin.'), 'error'); return; }
+    statusEl.className = 'cw-status'; statusEl.textContent = t('Testing connection…');
     try {
       const res = await fetch(`${this.apiBase}/clients/${this.client.id}/wp-test`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -249,33 +260,33 @@ export class ClientWizard {
         this.fixReady = true;
         this.client.connected = true;
         statusEl.className = 'cw-status cw-status-ok';
-        statusEl.textContent = `✓ Connected to WordPress ${d.wp_version || ''}` +
+        statusEl.textContent = t('✓ Connected to WordPress {version}', { version: d.wp_version || '' }) +
           `${d.seo_plugin && d.seo_plugin !== 'none' ? ` · SEO: ${d.seo_plugin}` : ''}` +
-          `${d.fixes_allowed ? ' · fixes enabled' : ' · fixes disabled on site'}`;
-        toast.show('WordPress connected!', 'success');
+          `${t(d.fixes_allowed ? ' · fixes enabled' : ' · fixes disabled on site')}`;
+        toast.show(t('WordPress connected!'), 'success');
       } else {
         statusEl.className = 'cw-status cw-status-err';
-        statusEl.textContent = `✗ ${d.detail || 'Could not connect. Check the URL and key.'}`;
+        statusEl.textContent = `✗ ${d.detail || t('Could not connect. Check the URL and key.')}`;
       }
     } catch (e) {
       statusEl.className = 'cw-status cw-status-err';
-      statusEl.textContent = 'Network error while testing.';
+      statusEl.textContent = t('Network error while testing.');
     }
   }
 
   refreshDonePane() {
     const nameEl = this.container.querySelector('#cw-done-name');
-    if (nameEl) nameEl.textContent = this.client?.name || 'Client';
+    if (nameEl) nameEl.textContent = this.client?.name || t('Client');
     const badge = this.container.querySelector('#cw-done-badge');
     if (badge) {
       if (this.fixReady) {
         badge.className = 'badge badge-passed';
-        badge.textContent = 'Connected · fixes enabled';
+        badge.textContent = t('Connected · fixes enabled');
       } else {
         const lbl = this.detected && this.detected.stack
-          ? (STACK_LABEL[this.detected.stack] || this.detected.stack) : '';
+          ? (t(STACK_LABEL[this.detected.stack]) || this.detected.stack) : '';
         badge.className = 'badge badge-notice';
-        badge.textContent = lbl ? `Audit-ready · ${lbl}` : 'Audit-ready';
+        badge.textContent = lbl ? t('Audit-ready · {stack}', { stack: lbl }) : t('Audit-ready');
       }
     }
   }
@@ -301,7 +312,7 @@ export class ClientWizard {
 
           <div class="wizard-pane" data-pane="2">
             <h2>Connect the site</h2>
-            <p>Choose how Scrawly reaches <b id="cw-site-host"></b>. <span id="cw-detect-chip"></span></p>
+            <p>Choose how Scrawly reaches <b id="cw-site-host" data-no-translate></b>. <span id="cw-detect-chip"></span></p>
             <div class="cw-methods">
               ${METHODS.map((x) => `<button type="button" class="cw-method" data-m="${x.m}">
                 <span class="cw-method-ico">${x.icon}</span>
@@ -333,16 +344,17 @@ export class ClientWizard {
         </div>
       </div>`;
 
+    localize(this.container);
     const $ = (s) => this.container.querySelector(s);
 
     $('#cw-back').addEventListener('click', () => { if (this.step > 1) this.setStep(this.step - 1); });
 
     $('#cw-next').addEventListener('click', async () => {
       if (this.step === 1) {
-        const btn = $('#cw-next'); btn.disabled = true; btn.textContent = 'Detecting…';
+        const btn = $('#cw-next'); btn.disabled = true; btn.textContent = t('Detecting…');
         const ok = await this.saveDetails();
         if (ok) await this.autoDetect();
-        btn.disabled = false; btn.textContent = 'Next';
+        btn.disabled = false; btn.textContent = t('Next');
         if (ok) this.setStep(2);
       } else if (this.step === 2) {
         this.setStep(3);
@@ -359,7 +371,7 @@ export class ClientWizard {
       $('#cw-back').style.visibility = this.step === 1 ? 'hidden' : 'visible';
       $('#cw-next').style.display = this.step === 3 ? 'none' : 'inline-flex';
       $('.wizard-footer').style.display = this.step === 3 ? 'none' : 'flex';
-      $('#cw-next').textContent = this.step === 2 ? 'Finish →' : 'Next';
+      $('#cw-next').textContent = this.step === 2 ? t('Finish →') : t('Next');
     };
     const origSetStep = this.setStep.bind(this);
     this.setStep = (n) => { origSetStep(n); syncFooter(); };

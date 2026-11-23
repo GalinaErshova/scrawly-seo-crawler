@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 import { toast } from './toast.js';
 // ui/components/agentic-view.js
 // Agentic Checks — origin-level AI-agent readiness.
@@ -12,11 +13,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const STATUS = {
-  pass:           { label: 'Pass',      cls: 'ag-pass' },
-  fail:           { label: 'Fail',      cls: 'ag-fail' },
-  info:           { label: 'Info',      cls: 'ag-info' },
-  not_applicable: { label: 'N/A',       cls: 'ag-na' },
-  error:          { label: 'Not run',   cls: 'ag-err' },
+  pass:           { label: t("Pass"),      cls: 'ag-pass' },
+  fail:           { label: t("Fail"),      cls: 'ag-fail' },
+  info:           { label: t("Info"),      cls: 'ag-info' },
+  not_applicable: { label: t("N/A"),       cls: 'ag-na' },
+  error:          { label: t("Not run"),   cls: 'ag-err' },
 };
 
 /** Score ring — same visual language as the dashboard health ring. */
@@ -60,25 +61,25 @@ function probeRow(r) {
   return `<details class="ag-probe" data-probe="${esc(r.probe_id)}">
     <summary class="ag-probe-sum">
       <span class="ag-badge ${st.cls}">${st.label}</span>
-      <span class="ag-probe-title">${esc(r.title)}</span>
+      <span class="ag-probe-title">${esc(t(r.title))}</span>
       <span class="ag-probe-concl">${esc(r.conclusion)}</span>
-      <span class="ag-probe-ms">${r.duration_ms || 0}ms</span>
+      <span class="ag-probe-ms">${t("{count}ms", { count: r.duration_ms || 0 })}</span>
     </summary>
     <div class="ag-probe-body">
-      <div class="ag-goal"><b>Goal</b> ${esc(r.goal)}</div>
-      ${r.remediation ? `<div class="ag-remedy"><b>How to fix</b> ${esc(r.remediation)}</div>` : ''}
+      <div class="ag-goal"><b>${t("Goal")}</b> ${esc(r.goal)}</div>
+      ${r.remediation ? `<div class="ag-remedy"><b>${t("How to fix")}</b> ${esc(r.remediation)}</div>` : ''}
       ${r.spec_urls?.length ? `<div class="ag-specs">${r.spec_urls.map(u =>
         `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//, '').slice(0, 60))}</a>`
       ).join('')}</div>` : ''}
       ${hasPrompt ? `<div class="ag-prompt-wrap">
         <div class="ag-prompt-head">
-          <span>Agent fix prompt</span>
-          <button class="btn btn-secondary ag-copy" data-probe="${esc(r.probe_id)}">Copy prompt</button>
+          <span>${t("Agent fix prompt")}</span>
+          <button class="btn btn-secondary ag-copy" data-probe="${esc(r.probe_id)}">${t("Copy prompt")}</button>
         </div>
         <pre class="ag-prompt mono">${esc(r.fix_prompt)}</pre>
       </div>` : ''}
       <div class="ag-trail">
-        <div class="ag-trail-h">Audit trail - what we actually requested</div>
+        <div class="ag-trail-h">${t("Audit trail - what we actually requested")}</div>
         ${(r.steps || []).map(stepRow).join('')}
       </div>
     </div>
@@ -96,17 +97,17 @@ export class AgenticView {
 
   async load(crawlId) {
     this.crawlId = crawlId;
-    if (!crawlId) return this._empty('Open a project to see its agentic readiness.');
+    if (!crawlId) return this._empty(t("Open a project to see its agentic readiness."));
     this._loading();
     try {
       const res = await fetch(`${this.apiBase}/agentic/${crawlId}`);
       this.data = await res.json();
     } catch {
-      return this._empty('Could not load the agentic report.');
+      return this._empty(t("Could not load the agentic report."));
     }
     if (!this.data?.available) {
       return this._empty(
-        'No agentic report for this crawl yet - it predates the Agentic Checks pass.',
+        t("No agentic report for this crawl yet - it predates the Agentic Checks pass."),
         true);
     }
     this.render();
@@ -115,7 +116,7 @@ export class AgenticView {
   async rerun() {
     if (!this.crawlId) return;
     const btn = this.container.querySelector('.ag-rerun');
-    if (btn) { btn.disabled = true; btn.textContent = 'Re-probing…'; }
+    if (btn) { btn.disabled = true; btn.textContent = t("Re-probing…"); }
     try {
       const res = await fetch(`${this.apiBase}/agentic/${this.crawlId}/rerun`,
                               { method: 'POST' });
@@ -123,20 +124,20 @@ export class AgenticView {
       this.data = await res.json();
       this.render();
     } catch {
-      if (btn) { btn.disabled = false; btn.textContent = 'Re-run checks'; }
-      toast.show('Could not run the checks again. Please try again.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = t("Re-run checks"); }
+      toast.show(t("Could not run the checks again. Please try again."), 'error');
     }
   }
 
   _loading() {
     this.container.innerHTML =
-      `<div class="ag-empty"><div class="ag-spin"></div>Probing agentic readiness…</div>`;
+      `<div class="ag-empty"><div class="ag-spin"></div>${t("Probing agentic readiness…")}</div>`;
   }
 
   _empty(msg, offerRun = false) {
     this.container.innerHTML = `<div class="ag-empty">
       <p>${esc(msg)}</p>
-      ${offerRun ? `<button class="btn btn-primary ag-rerun">Run agentic checks</button>` : ''}
+      ${offerRun ? `<button class="btn btn-primary ag-rerun">${t("Run agentic checks")}</button>` : ''}
     </div>`;
     this._wire();
   }
@@ -163,22 +164,20 @@ export class AgenticView {
       <div class="ag-page">
         <div class="ag-head">
           <div class="ag-head-main">
-            <h1>Agentic Checks</h1>
-            <p>Can an AI agent discover, read, authenticate against and transact
-               with this site? Probes the origin root only - a fixed set of
-               requests, independent of site size.</p>
+            <h1>${t("Agentic Checks")}</h1>
+            <p>${t("Can an AI agent discover, read, authenticate against and transact with this site? Probes the origin root only - a fixed set of requests, independent of site size.")}</p>
             <div class="ag-origin mono">${esc(d.origin || '')}</div>
           </div>
-          <button class="btn btn-secondary ag-rerun">Re-run checks</button>
+          <button class="btn btn-secondary ag-rerun">${t("Re-run checks")}</button>
         </div>
 
         <div class="card ag-hero">
           <div class="ag-hero-score">
             ${ring(d.score ?? 0)}
             <div class="ag-level">
-              <div class="ag-level-name">${esc(d.level || '')}</div>
-              <div class="ag-level-label">${esc(d.level_label || '')}</div>
-              <div class="ag-level-sub">${Number(d.passed) || 0}/${Number(d.scored) || 0} checks passed</div>
+              <div class="ag-level-name">${esc(d.level ? t('Level {level}', { level: String(d.level).replace(/^Level /, '') }) : '')}</div>
+              <div class="ag-level-label">${esc(t(d.level_label || ''))}</div>
+              <div class="ag-level-sub">${t("{passed}/{total} checks passed", { passed: Number(d.passed) || 0, total: Number(d.scored) || 0 })}</div>
             </div>
           </div>
           <div class="ag-cats">
@@ -186,24 +185,23 @@ export class AgenticView {
               const na = c.score === null || c.total === 0;
               return `<div class="ag-cat ${na ? 'is-na' : ''}">
                 <div class="ag-cat-top">
-                  <span class="ag-cat-label">${esc(c.label)}</span>
-                  <span class="ag-cat-score">${na ? 'Not checked' : c.score + '%'}</span>
+                  <span class="ag-cat-label">${esc(t(c.label))}</span>
+                  <span class="ag-cat-score">${na ? t("Not checked") : c.score + '%'}</span>
                 </div>
                 <div class="ag-bar"><div class="ag-bar-fill" style="width:${na ? 0 : c.score}%"></div></div>
-                <div class="ag-cat-sub">${na ? 'no applicable checks' : `${c.passed}/${c.total} passed`}</div>
+                <div class="ag-cat-sub">${na ? t("no applicable checks") : t("{passed}/{total} passed", { passed: c.passed, total: c.total })}</div>
               </div>`;
             }).join('')}
           </div>
         </div>
 
         ${d.is_commerce ? '' : `<div class="ag-note">
-          No e-commerce signals detected on this origin, so agentic-commerce
-          protocols are shown for reference and do not affect the score.</div>`}
+          ${t("No e-commerce signals detected on this origin, so agentic-commerce protocols are shown for reference and do not affect the score.")}</div>`}
 
         <div class="ag-filters">
-          ${[['actionable', `Needs action (${actionable.length})`],
-             ['passed', `Passing (${results.filter(r => r.status === 'pass').length})`],
-             ['all', `All (${results.length})`]]
+          ${[['actionable', t("Needs action ({count})", { count: actionable.length })],
+             ['passed', t("Passing ({count})", { count: results.filter(r => r.status === 'pass').length })],
+             ['all', t("All ({count})", { count: results.length })]]
             .map(([k, l]) => `<button class="ag-filter ${this.filter === k ? 'is-on' : ''}"
                  data-filter="${k}">${l}</button>`).join('')}
         </div>
@@ -212,12 +210,12 @@ export class AgenticView {
           const cs = catScore(g.label);
           return `<section class="ag-group">
             <div class="ag-group-head">
-              <h2>${esc(g.label)}</h2>
+              <h2>${esc(t(g.label))}</h2>
               ${cs && cs.total ? `<span class="ag-group-score">${cs.passed}/${cs.total}</span>` : ''}
             </div>
             ${g.rows.map(probeRow).join('')}
           </section>`;
-        }).join('') : `<div class="ag-empty"><p>Nothing in this filter.</p></div>`}
+        }).join('') : `<div class="ag-empty"><p>${t("Nothing in this filter.")}</p></div>`}
       </div>`;
     this._wire();
   }
@@ -237,11 +235,11 @@ export class AgenticView {
       try {
         await navigator.clipboard.writeText(row.fix_prompt);
         const was = b.textContent;
-        b.textContent = 'Copied ✓';
+        b.textContent = t("Copied ✓");
         b.classList.add('is-copied');
         setTimeout(() => { b.textContent = was; b.classList.remove('is-copied'); }, 1600);
       } catch {
-        b.textContent = 'Press ⌘C';
+        b.textContent = t("Press ⌘C");
       }
     }));
   }

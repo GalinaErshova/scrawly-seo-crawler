@@ -9,6 +9,7 @@
 // (stored on the element) so repeated calls never leak observers.
 
 import * as d3 from 'd3';
+import { t as translate } from '../i18n.js';
 
 const CHART_VARS = [
   'var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)',
@@ -67,7 +68,7 @@ function emptyState(container, msg) {
   reset(container);
   const d = document.createElement('div');
   d.className = 'chart-empty';
-  d.textContent = msg || 'No data';
+  d.textContent = translate(msg || 'No data');
   container.appendChild(d);
 }
 

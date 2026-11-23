@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/help-rail.js
 // "Send feedback" and "About Scrawly" at the bottom of the icon rail. Scrawly is
 // free and built for the SEO community, so a note to the maintainer is always
@@ -48,23 +49,21 @@ export function openAbout() {
     <div class="fb-card about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
       <h2 class="fb-title" id="about-title">Scrawly</h2>
       <p class="about-version" aria-live="polite">&nbsp;</p>
-      <p class="fb-sub">A free, open-source technical SEO and GEO crawler. Audit any
-        website for search and AI-search readiness, see what to fix, and fix
-        WordPress sites safely. No account, no limits, free forever.</p>
+      <p class="fb-sub">${t("A free, open-source technical SEO and GEO crawler. Audit any website for search and AI-search readiness, see what to fix, and fix WordPress sites safely. No account, no limits, free forever.")}</p>
       <dl class="about-meta">
-        <dt>Created by</dt>
+        <dt>${t("Created by")}</dt>
         <dd><a href="${esc(PROJECT.site)}" data-ext>${esc(PROJECT.author)}</a>
           (<a href="${esc(PROJECT.site)}" data-ext>iliassami.com</a>)</dd>
-        <dt>Contact</dt>
+        <dt>${t("Contact")}</dt>
         <dd><a href="mailto:${esc(PROJECT.email)}" data-ext>${esc(PROJECT.email)}</a></dd>
-        <dt>Source code</dt>
+        <dt>${t("Source code")}</dt>
         <dd><a href="${esc(PROJECT.repo)}" data-ext>GitHub</a></dd>
-        <dt>License</dt>
+        <dt>${t("License")}</dt>
         <dd>${esc(PROJECT.license)}</dd>
       </dl>
       <div class="fb-actions">
-        <button class="fb-cancel" type="button">Close</button>
-        <button class="fb-send about-feedback" type="button">Send feedback</button>
+        <button class="fb-cancel" type="button">${t("Close")}</button>
+        <button class="fb-send about-feedback" type="button">${t("Send feedback")}</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
@@ -85,15 +84,15 @@ export function openAbout() {
   appInfo().then((info) => {
     const v = ov.querySelector('.about-version');
     if (!v) return;
-    const ed = info.edition === 'free' ? 'Free edition' : 'Managed edition';
-    v.textContent = info.version ? `${ed} · version ${info.version}` : ed;
+    const ed = info.edition === 'free' ? t("Free edition") : t("Managed edition");
+    v.textContent = info.version ? t("{edition} · version {version}", { edition: ed, version: info.version }) : ed;
   });
 }
 
 export function mountHelpRail() {
   const rail = document.querySelector('.global-nav');
   if (!rail || document.getElementById('nav-btn-feedback')) return;
-  rail.appendChild(railButton('nav-btn-feedback', 'Send feedback', ICON_FEEDBACK,
+  rail.appendChild(railButton('nav-btn-feedback', t("Send feedback"), ICON_FEEDBACK,
     () => { if (typeof window.openFeedback === 'function') window.openFeedback(); }));
-  rail.appendChild(railButton('nav-btn-about', 'About Scrawly', ICON_ABOUT, openAbout));
+  rail.appendChild(railButton('nav-btn-about', t("About Scrawly"), ICON_ABOUT, openAbout));
 }

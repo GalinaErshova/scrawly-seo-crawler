@@ -1,8 +1,9 @@
+import { t } from '../i18n.js';
 const _esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // Plain-language names for the fix tiers.
-const TIER_LABEL = { AUTO: 'Auto-fix', 'AUTO-SAFE': 'Auto-fix', REVIEW: 'Needs review', FLAG: 'Manual' };
+const TIER_LABEL = { AUTO: t("Auto-fix"), 'AUTO-SAFE': t("Auto-fix"), REVIEW: t("Needs review"), FLAG: t("Manual") };
 
 const FIX_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8L18.7 9.6l-4.8 1.9L12 16.3l-1.9-4.8L5.3 9.6l4.8-1.9L12 3z"></path></svg>';
 
@@ -32,30 +33,30 @@ export function createIssueCard(issue, canFix = false, fixedCount = 0) {
     <div class="flex" style="justify-content: space-between; align-items: flex-start;">
       <div>
         <div class="flex gap-2" style="align-items: center; margin-bottom: var(--space-1);">
-          <span class="badge badge-${issue.severity.toLowerCase()}">${_esc(issue.severity)}</span>
+          <span class="badge badge-${issue.severity.toLowerCase()}">${_esc(t(issue.severity))}</span>
           <h3 style="margin: 0;">${_esc(issue.title)}</h3>
         </div>
-        <p class="text-sm" style="margin-bottom: var(--space-1);">${_esc(issue.why_it_matters) || 'No rationale provided.'}</p>
-        ${issue.recommended_fix ? `<p class="text-sm" style="margin-bottom: var(--space-1); color: var(--text-secondary);"><strong>Fix:</strong> ${_esc(issue.recommended_fix)}</p>` : ''}
-        ${ev ? `<p class="text-sm mono" style="margin-bottom: var(--space-1); color: var(--text-secondary); font-size: 11px;">Evidence: ${ev}</p>` : ''}
+        <p class="text-sm" style="margin-bottom: var(--space-1);">${_esc(issue.why_it_matters) || t("No rationale provided.")}</p>
+        ${issue.recommended_fix ? `<p class="text-sm" style="margin-bottom: var(--space-1); color: var(--text-secondary);"><strong>${t("Fix:")}</strong> ${_esc(issue.recommended_fix)}</p>` : ''}
+        ${ev ? `<p class="text-sm mono" style="margin-bottom: var(--space-1); color: var(--text-secondary); font-size: 11px;">${t("Evidence:")} ${ev}</p>` : ''}
         <div class="flex gap-2" style="align-items:center;">
           <span class="badge badge-tier">${_esc(TIER_LABEL[issue.tier] || issue.tier || '')}</span>
-          <span class="text-sm" style="color: var(--text-secondary); font-weight: 500;">Affected URLs: ${issue.affected_url_ids?.length || 0}</span>
+          <span class="text-sm" style="color: var(--text-secondary); font-weight: 500;">${t("Affected URLs:")} ${issue.affected_url_ids?.length || 0}</span>
         </div>
       </div>
       <div class="flex-col gap-2" style="align-items: stretch;">
-        <button class="btn btn-secondary view-issue-btn" data-id="${issue.id}">View Pages</button>
+        <button class="btn btn-secondary view-issue-btn" data-id="${issue.id}">${t("View Pages")}</button>
         <!-- Every finding gets a copy-pasteable prompt for the user's own coding
              agent - the fix path that works on any stack, not just connected
              WordPress. Fetched lazily so the hub doesn't render N prompts. -->
         <button class="btn btn-secondary copy-prompt-btn" data-id="${issue.id}"
-                title="Copy a fix prompt for your coding agent">Copy prompt</button>
+                title="${t("Copy a fix prompt for your coding agent")}">${t("Copy prompt")}</button>
         ${fixedCount > 0
-          ? `<button class="fix-btn fx-done fix-issue-btn" data-id="${issue.id}" title="Click to see what the agent fixed"><span>✓ Fixed ${fixedCount}</span></button>`
+          ? `<button class="fix-btn fx-done fix-issue-btn" data-id="${issue.id}" title="${t("Click to see what the agent fixed")}"><span>${t("✓ Fixed {count}", { count: fixedCount })}</span></button>`
           : (issue.tier === 'FLAG'
-            ? `<span class="badge badge-tier" title="Report-only - never auto-applied" style="text-align:center;">Manual only</span>`
+            ? `<span class="badge badge-tier" title="${t("Report-only - never auto-applied")}" style="text-align:center;">${t("Manual only")}</span>`
             : (canFix
-              ? `<button class="fix-btn fix-issue-btn" data-id="${issue.id}" title="Send the agent to fix every affected page">${FIX_ICON}<span>Fix</span></button>`
+              ? `<button class="fix-btn fix-issue-btn" data-id="${issue.id}" title="${t("Send the agent to fix every affected page")}">${FIX_ICON}<span>${t("Fix")}</span></button>`
               : ''))}
       </div>
     </div>

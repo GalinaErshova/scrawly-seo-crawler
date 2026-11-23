@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/resources-view.js
 // Resources view — the CSS / JS / media sub-resources every page pulls in,
 // HEAD-checked during the crawl for status, content-type and size (SF Pattern A).
@@ -7,7 +8,7 @@
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-const TYPE_LABEL = { css: 'CSS', js: 'JS', media: 'Media' };
+const TYPE_LABEL = { css: 'CSS', js: 'JS', media: t("Media") };
 const fmtSize = (b) => (b == null ? ' - ' : b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`);
 const pathOf = (u) => { try { const x = new URL(u); return x.pathname + x.search; } catch { return u; } };
 const hostOf = (u) => { try { return new URL(u).hostname; } catch { return ''; } };
@@ -33,17 +34,17 @@ export class ResourcesView {
 
   _shell() {
     this.el.innerHTML = `
-      <h1 style="margin-bottom:2px;">Resources</h1>
-      <p style="margin-bottom:var(--space-2);">Every CSS, JavaScript and media file the crawled pages load - fetched and status-checked. Broken ones break rendering for bots.</p>
+      <h1 style="margin-bottom:2px;">${t("Resources")}</h1>
+      <p style="margin-bottom:var(--space-2);">${t("Every CSS, JavaScript and media file the crawled pages load - fetched and status-checked. Broken ones break rendering for bots.")}</p>
       <div class="rv-stats"></div>
       <div class="rv-bar">
         <div class="rv-filters"></div>
-        <input class="rv-search" type="text" placeholder="Search resource URLs…">
+        <input class="rv-search" type="text" placeholder="${t("Search resource URLs…")}">
       </div>
       <div class="rv-table-wrap"><table class="rv-table stbl">
         <thead><tr>
-          <th style="width:70px;">Status</th><th style="width:64px;">Type</th>
-          <th style="width:84px;">Size</th><th style="width:60px;">Refs</th>
+          <th style="width:70px;">${t("Status")}</th><th style="width:64px;">${t("Type")}</th>
+          <th style="width:84px;">${t("Size")}</th><th style="width:60px;">${t("Refs")}</th>
           <th style="width:170px;">Content-Type</th><th>URL</th>
         </tr></thead>
         <tbody></tbody>
@@ -68,7 +69,7 @@ export class ResourcesView {
 
   _render() {
     const s = this.data.summary || {};
-    const chip = (label, v, cls = '') => `<span class="chip-stat ${cls}">${v ?? 0}<small>${label}</small></span>`;
+    const chip = (label, v, cls = '') => `<span class="chip-stat ${cls}">${v ?? 0}<small>${t(label)}</small></span>`;
     this.el.querySelector('.rv-stats').innerHTML =
       chip('resources', s.total) +
       chip('css', s.css?.count) + chip('js', s.js?.count) + chip('media', s.media?.count) +
@@ -77,7 +78,7 @@ export class ResourcesView {
     const counts = { all: s.total || 0, css: s.css?.count || 0, js: s.js?.count || 0, media: s.media?.count || 0, broken: s.broken || 0 };
     this.el.querySelector('.rv-filters').innerHTML = ['all', 'css', 'js', 'media', 'broken']
       .map(f => `<button class="pill${f === this.filter ? ' active' : ''}${f === 'broken' && counts.broken ? ' danger' : ''}" data-f="${f}">
-        ${f === 'all' ? 'All' : (TYPE_LABEL[f] || 'Broken')} <span class="pill-n">${counts[f]}</span></button>`).join('');
+        ${f === 'all' ? t('All') : (TYPE_LABEL[f] || t('Broken'))} <span class="pill-n">${counts[f]}</span></button>`).join('');
     this.el.querySelectorAll('.rv-filters .pill').forEach(b => b.addEventListener('click', () => {
       this.filter = b.dataset.f;
       this._render();
@@ -97,8 +98,8 @@ export class ResourcesView {
     const body = this.el.querySelector('.rv-table tbody');
     if (!rows.length) {
       body.innerHTML = `<tr><td colspan="6" class="stbl-empty">${
-        this.data.resources?.length ? 'No resources match this filter.'
-          : 'No resources recorded for this crawl. (Enable CSS / JavaScript / Media under Configuration → Extraction.)'
+        this.data.resources?.length ? t("No resources match this filter.")
+          : t("No resources recorded for this crawl. (Enable CSS / JavaScript / Media under Configuration → Extraction.)")
       }</td></tr>`;
       return;
     }

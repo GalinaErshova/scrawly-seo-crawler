@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/data-grid.js
 import { saveText } from './external.js';
 import { toast } from './toast.js';
@@ -70,9 +71,9 @@ export class DataGrid {
       bar = document.createElement('div');
       bar.className = 'bulk-action-bar';
       bar.innerHTML = `
-        <span class="selection-count">0 selected</span>
+        <span class="selection-count">${t("{count} selected", { count: 0 })}</span>
         <div class="flex gap-2">
-          <button class="btn btn-secondary" id="grid-btn-export">Export Selected</button>
+          <button class="btn btn-secondary" id="grid-btn-export">${t("Export Selected")}</button>
         </div>
       `;
       this.container.appendChild(bar);
@@ -93,12 +94,12 @@ export class DataGrid {
         // CRLF + a BOM so spreadsheet apps (Excel included) open it cleanly.
         const csv = '\ufeff' + [headers, ...rows].join('\r\n');
         const outcome = await saveText('scrawly-export.csv', csv, 'text/csv');
-        if (outcome === 'saved') toast.show(`Exported ${selectedData.length} rows.`, 'success');
-        else if (outcome === 'failed') toast.show('Could not save the export. Please try again.', 'error');
+        if (outcome === 'saved') toast.show(t("Exported {count} rows.", { count: selectedData.length }), 'success');
+        else if (outcome === 'failed') toast.show(t("Could not save the export. Please try again."), 'error');
       });
     }
     
-    bar.querySelector('.selection-count').textContent = `${this.selectedIds.size} selected`;
+    bar.querySelector('.selection-count').textContent = t("{count} selected", { count: this.selectedIds.size });
     
     if (this.selectedIds.size > 0) {
       bar.classList.add('visible');
@@ -123,7 +124,7 @@ export class DataGrid {
     // Checkbox column
     const thCb = document.createElement('th');
     thCb.style.width = '40px';
-    thCb.innerHTML = `<input type="checkbox" id="grid-select-all">`;
+    thCb.innerHTML = `<input type="checkbox" id="grid-select-all" aria-label="${t("Select all rows")}">`;
     thr.appendChild(thCb);
     
     this.columns.forEach(col => {
@@ -152,6 +153,7 @@ export class DataGrid {
       const tdCb = document.createElement('td');
       const cb = document.createElement('input');
       cb.type = 'checkbox';
+      cb.setAttribute('aria-label', t('Select row'));
       cb.checked = this.selectedIds.has(row.id);
       cb.addEventListener('click', (e) => this.toggleRowSelection(row.id, e));
       tdCb.appendChild(cb);

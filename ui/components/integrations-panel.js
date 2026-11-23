@@ -4,6 +4,7 @@
 //
 // Everything here reports whether a credential exists, never what it is: secrets
 // live in .env and are read server-side only (Invariant I5).
+import { localize, t } from '../i18n.js';
 import { toast } from './toast.js';
 import { openExternal } from './external.js';
 
@@ -59,15 +60,18 @@ export class IntegrationsPanel {
         </div>
         <div class="int-body" data-body="backlinks">Loading…</div>
       </div>`;
+    localize(this.el);
   }
 
   _badge(key, text, cls) {
     const el = this.el.querySelector(`[data-badge="${key}"]`);
-    if (el) { el.textContent = text; el.className = `int-badge ${cls}`; }
+    if (el) { el.textContent = t(text); el.className = `int-badge ${cls}`; }
   }
   _body(key, html) {
     const el = this.el.querySelector(`[data-body="${key}"]`);
-    if (el) el.innerHTML = html;
+    if (!el) return;
+    el.innerHTML = html;
+    localize(el);
   }
   async _get(path) { try { return await (await fetch(`${this.api}${path}`)).json(); } catch { return {}; } }
 
@@ -108,18 +112,18 @@ export class IntegrationsPanel {
     const gsc = props.gsc_sites || [];
     const ga4 = props.ga4_properties || [];
     this._body('google', `
-      <div class="int-row"><span>Account</span><b>${esc(s.email || 'connected')}</b></div>
-      <div class="int-row"><span>Search Console</span><b>${gsc.length} propert${gsc.length === 1 ? 'y' : 'ies'}</b></div>
-      ${gsc.length ? `<ul class="int-list">${gsc.slice(0, 8).map(x => `<li class="mono">${esc(x)}</li>`).join('')}</ul>` : ''}
-      <div class="int-row"><span>Analytics 4</span><b>${ga4.length} propert${ga4.length === 1 ? 'y' : 'ies'}</b></div>
+      <div class="int-row"><span>Account</span><b data-no-translate>${esc(s.email || t('connected'))}</b></div>
+      <div class="int-row"><span>Search Console</span><b>${t(gsc.length === 1 ? '{count} property' : '{count} properties', { count: gsc.length })}</b></div>
+      ${gsc.length ? `<ul class="int-list">${gsc.slice(0, 8).map(x => `<li class="mono" data-no-translate>${esc(x)}</li>`).join('')}</ul>` : ''}
+      <div class="int-row"><span>Analytics 4</span><b>${t(ga4.length === 1 ? '{count} property' : '{count} properties', { count: ga4.length })}</b></div>
       ${ga4.length ? `<ul class="int-list">${ga4.slice(0, 8).map(p =>
-        `<li><span class="mono">${esc(p.property_id)}</span> - ${esc(p.display_name)} <span class="cfg-hint">${esc(p.account)}</span></li>`).join('')}</ul>
+        `<li data-no-translate><span class="mono">${esc(p.property_id)}</span> - ${esc(p.display_name)} <span class="cfg-hint">${esc(p.account)}</span></li>`).join('')}</ul>
        <p class="int-note">Put a property ID in <b>Configuration → APIs → GA4 property</b> to enrich a crawl.</p>` : ''}
       <div class="int-actions"><button class="btn btn-secondary" id="int-g-disconnect">Disconnect</button></div>`);
     this.el.querySelector('#int-g-disconnect')?.addEventListener('click', async () => {
-      if (!confirm('Disconnect Google? Scrawly will revoke the token and forget it.')) return;
+      if (!confirm(t('Disconnect Google? Scrawly will revoke the token and forget it.'))) return;
       await fetch(`${this.api}/oauth/google/disconnect`, { method: 'POST' });
-      toast.show('Google disconnected.', 'success');
+      toast.show(t('Google disconnected.'), 'success');
       this._loadGoogle();
     });
   }
@@ -127,21 +131,21 @@ export class IntegrationsPanel {
   async _connectGoogle() {
     if (this._gPoll) return;   // already waiting for approval
     const d = await this._get('/oauth/google/start');
-    if (!d.auth_url) { toast.show(d.detail || 'Could not start the Google connection.', 'error'); return; }
+    if (!d.auth_url) { toast.show(d.detail || t('Could not start the Google connection.'), 'error'); return; }
     // Google must be approved by the person in their own browser (the desktop
     // window can't open one itself), then we poll until the callback lands.
     openExternal(d.auth_url);
-    toast.show('Approve access in your browser. This page updates automatically.', 'info');
+    toast.show(t('Approve access in your browser. This page updates automatically.'), 'info');
     const started = Date.now();
     this._gPoll = setInterval(async () => {
       const s = await this._get('/oauth/google/status');
       if (s.connected) {
         clearInterval(this._gPoll); this._gPoll = null;
-        toast.show('Google connected!', 'success');
+        toast.show(t('Google connected!'), 'success');
         this._loadGoogle();
       } else if (Date.now() - started > 180000) {   // give up after 3 min
         clearInterval(this._gPoll); this._gPoll = null;
-        toast.show('Google approval timed out. Click Connect to try again.', 'warning');
+        toast.show(t('Google approval timed out. Click Connect to try again.'), 'warning');
       }
     }, 2000);
   }
@@ -163,19 +167,19 @@ SCRAWLY_EMBED_KEY=sk-...</pre>
     }
     this._badge('embeddings', 'Configured', 'ok');
     this._body('embeddings', `
-      <div class="int-row"><span>Endpoint</span><b class="mono">${esc(s.base_url)}</b></div>
-      <div class="int-row"><span>Model</span><b class="mono">${esc(s.model)}</b></div>
+      <div class="int-row"><span>Endpoint</span><b class="mono"><span data-no-translate>${esc(s.base_url)}</span></b></div>
+      <div class="int-row"><span>Model</span><b class="mono"><span data-no-translate>${esc(s.model)}</span></b></div>
       <div class="int-row"><span>API key</span><b>${s.api_key_set ? 'set' : 'none (local)'}</b></div>
       <div class="int-actions"><button class="btn btn-secondary" id="int-emb-test">Test embeddings</button>
         <span id="int-emb-res" class="cfg-hint"></span></div>`);
     this.el.querySelector('#int-emb-test')?.addEventListener('click', async () => {
       const out = this.el.querySelector('#int-emb-res');
-      out.textContent = 'Testing…';
+      out.textContent = t('Testing…');
       try {
         const r = await (await fetch(`${this.api}/embeddings/test`, { method: 'POST' })).json();
-        out.textContent = r.ok ? `✓ ${r.model} - ${r.dimensions} dimensions` : `✗ ${r.detail}`;
+        out.textContent = r.ok ? t('✓ {model} - {dimensions} dimensions', { model: r.model, dimensions: r.dimensions }) : `✗ ${r.detail}`;
         out.style.color = r.ok ? 'var(--color-passed)' : 'var(--color-critical)';
-      } catch { out.textContent = '✗ request failed'; }
+      } catch { out.textContent = t('✗ request failed'); }
     });
   }
 
@@ -187,7 +191,7 @@ SCRAWLY_EMBED_KEY=sk-...</pre>
       mode === 'local' ? 'ok' : mode === 'public' ? 'warn' : '');
     this._body('spelling', `
       <div class="int-row"><span>Backend</span><b>${mode === 'local' ? 'Local LanguageTool' : mode === 'public' ? 'LanguageTool public API' : 'Not installed'}</b></div>
-      ${s.note ? `<p class="int-note">${esc(s.note)}</p>` : ''}
+      ${s.note ? `<p class="int-note" data-no-translate>${esc(s.note)}</p>` : ''}
       <p class="int-note">Enable per crawl under <b>Configuration → Content</b>.</p>`);
   }
 
@@ -196,10 +200,10 @@ SCRAWLY_EMBED_KEY=sk-...</pre>
     const s = await this._get('/auth/form/status');
     this._badge('auth', s.configured ? 'Configured' : 'Not configured', s.configured ? 'ok' : '');
     this._body('auth', s.configured ? `
-      <div class="int-row"><span>Login URL</span><b class="mono">${esc(s.login_url)}</b></div>
-      <div class="int-row"><span>User</span><b>${esc(s.user)}</b></div>
+      <div class="int-row"><span>Login URL</span><b class="mono"><span data-no-translate>${esc(s.login_url)}</span></b></div>
+      <div class="int-row"><span>User</span><b><span data-no-translate>${esc(s.user)}</span></b></div>
       <div class="int-row"><span>Password</span><b>${s.password_set ? 'set (in .env)' : 'missing'}</b></div>
-      <p class="int-note">⚠ ${esc(s.note || '')}</p>
+      <p class="int-note" data-no-translate>⚠ ${esc(s.note || '')}</p>
       <p class="int-note">Enable per crawl under <b>Configuration → Spider</b>. Logout, delete and
       wp-admin links are excluded automatically.</p>` : `
       <p class="int-note">Crawl pages behind a login. Add to <code>.env</code> and restart - use a
@@ -220,10 +224,10 @@ SCRAWLY_FORM_PASS=...</pre>`);
       ${provs.map(p => `
         <div class="int-prov">
           <div class="int-row">
-            <span>${esc(p.label)}</span>
+            <span data-no-translate>${esc(p.label)}</span>
             <b class="${p.connected ? 'int-ok' : ''}">${p.connected ? '✓ connected' : 'not connected'}</b>
           </div>
-          <div class="cfg-hint">${esc(p.note)} · env: <code>${p.env.join(', ')}</code>
+          <div class="cfg-hint"><span data-no-translate>${esc(p.note)}</span> · env: <code>${p.env.join(', ')}</code>
             · <a href="${esc(p.signup)}" target="_blank" rel="noopener noreferrer">get a key</a></div>
           ${p.connected ? `<button class="btn btn-secondary btn-sm int-bl-test" data-p="${p.id}">Test</button>
             <span class="cfg-hint" data-blres="${p.id}"></span>` : ''}
@@ -231,15 +235,15 @@ SCRAWLY_FORM_PASS=...</pre>`);
     this.el.querySelectorAll('.int-bl-test').forEach(b => b.addEventListener('click', async () => {
       const id = b.dataset.p;
       const out = this.el.querySelector(`[data-blres="${id}"]`);
-      out.textContent = 'Testing…';
+      out.textContent = t('Testing…');
       try {
         const r = await (await fetch(`${this.api}/backlinks/test`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ provider: id }),
         })).json();
-        out.textContent = r.ok ? '✓ credential accepted' : `✗ ${r.detail}`;
+        out.textContent = r.ok ? t('✓ credential accepted') : `✗ ${r.detail}`;
         out.style.color = r.ok ? 'var(--color-passed)' : 'var(--color-critical)';
-      } catch { out.textContent = '✗ request failed'; }
+      } catch { out.textContent = t('✗ request failed'); }
     }));
   }
 }

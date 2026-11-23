@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ui/components/filter-builder.js
 
 export class FilterBuilder {
@@ -47,8 +48,8 @@ export class FilterBuilder {
     topBar.className = 'flex gap-2';
     topBar.style.alignItems = 'center';
     topBar.innerHTML = `
-      <input type="text" class="filter-input flex-1" placeholder="Search across all columns..." id="global-search">
-      <button class="btn btn-secondary" id="btn-add-filter">+ Add Rule</button>
+      <input type="text" class="filter-input flex-1" placeholder="${t("Search across all columns...")}" id="global-search">
+      <button class="btn btn-secondary" id="btn-add-filter">${t("+ Add Rule")}</button>
     `;
     wrapper.appendChild(topBar);
     
@@ -82,7 +83,7 @@ export class FilterBuilder {
       ops.forEach(op => {
         const opt = document.createElement('option');
         opt.value = op;
-        opt.textContent = op;
+        opt.textContent = t(op);
         if (op === f.op) opt.selected = true;
         opSelect.appendChild(opt);
       });
@@ -99,7 +100,7 @@ export class FilterBuilder {
       const rmBtn = document.createElement('button');
       rmBtn.className = 'filter-remove';
       rmBtn.innerHTML = '✕';
-      rmBtn.title = 'Remove rule';
+      rmBtn.title = t("Remove rule");
       rmBtn.addEventListener('click', () => this.removeFilter(idx));
       
       row.appendChild(colSelect);

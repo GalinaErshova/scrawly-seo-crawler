@@ -3,6 +3,7 @@
 // tabbed config surface. Fields marked {planned:true} are persisted with the
 // profile but not yet honored by the crawler engine (labelled "Planned" in UI)
 // — everything else is wired and affects the crawl.
+import { localize, t } from '../i18n.js';
 import { toast } from './toast.js';
 
 const UA_PRESETS = [
@@ -202,7 +203,7 @@ const TABS = [
       { k: 'list_urls', label: 'URL list', type: 'urls', hint: 'one per line - non-URL lines are ignored, so raw exports paste in as-is' },
     ]},
   ]},
-  { id: 'custom', label: 'Custom', groups: [
+  { id: 'custom', label: 'Custom rules', groups: [
     { group: 'Custom extraction + search', items: [ { k: '__custom__', type: 'custom' } ] },
   ]},
   { id: 'advanced', label: 'Advanced', groups: [
@@ -279,12 +280,12 @@ export class ConfigPanel {
   _syncProfileSelect() {
     const sel = this.container.querySelector('#cfg-profile');
     sel.innerHTML = this.profiles.map(p =>
-      `<option value="${p.id}">${esc(p.name)}${p.is_default ? ' · default' : ''}${p.is_preset ? ' (preset)' : ''}</option>`
+      `<option value="${p.id}">${esc(p.is_preset ? t(p.name) : p.name)}${p.is_default ? ` · ${t('default')}` : ''}${p.is_preset ? ` (${t('preset')})` : ''}</option>`
     ).join('');
     if (this.currentId) sel.value = String(this.currentId);
     const p = this._current();
     this.container.querySelector('#cfg-delete').disabled = !p || p.is_preset;
-    this.container.querySelector('#cfg-badge').textContent = p && p.is_default ? 'Default' : '';
+    this.container.querySelector('#cfg-badge').textContent = p && p.is_default ? t('Default') : '';
   }
 
   _fillFields() {
@@ -322,13 +323,13 @@ export class ConfigPanel {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: { ...this._collect(), ...this._collectCustom() } }),
       });
-      toast.show(`Saved "${p.name}".`, 'success');
+      toast.show(t('Saved "{name}".', { name: p.name }), 'success');
       await this.load();
-    } catch { toast.show('Save failed.', 'error'); }
+    } catch { toast.show(t('Save failed.'), 'error'); }
   }
 
   async _saveAs() {
-    const name = prompt('New profile name:');
+    const name = prompt(t('New profile name:'));
     if (!name) return;
     try {
       const r = await fetch(`${this.apiBase}/profiles`, {
@@ -337,26 +338,26 @@ export class ConfigPanel {
       });
       const p = await r.json();
       this.currentId = p.id;
-      toast.show(`Created "${name}".`, 'success');
+      toast.show(t('Created "{name}".', { name }), 'success');
       await this.load();
-    } catch { toast.show('Could not create profile.', 'error'); }
+    } catch { toast.show(t('Could not create profile.'), 'error'); }
   }
 
   async _setDefault() {
     const p = this._current();
     if (!p) return;
     await fetch(`${this.apiBase}/profiles/${p.id}/default`, { method: 'POST' });
-    toast.show(`"${p.name}" is now the default.`, 'success');
+    toast.show(t('"{name}" is now the default.', { name: p.name }), 'success');
     await this.load();
   }
 
   async _delete() {
     const p = this._current();
     if (!p || p.is_preset) return;
-    if (!confirm(`Delete profile "${p.name}"?`)) return;
+    if (!confirm(t('Delete profile "{name}"?', { name: p.name }))) return;
     const r = await fetch(`${this.apiBase}/profiles/${p.id}`, { method: 'DELETE' });
-    if (r.ok) { this.currentId = null; toast.show('Profile deleted.', 'success'); await this.load(); }
-    else { toast.show('Could not delete.', 'error'); }
+    if (r.ok) { this.currentId = null; toast.show(t('Profile deleted.'), 'success'); await this.load(); }
+    else { toast.show(t('Could not delete.'), 'error'); }
   }
 
   _field(f) {
@@ -381,29 +382,29 @@ export class ConfigPanel {
     let input;
     if (f.type === 'bool') input = `<input type="checkbox" data-k="${f.k}">`;
     else if (f.type === 'num') input = `<input type="number" class="wizard-input cfg-num" data-k="${f.k}">`;
-    else if (f.type === 'ua') input = `<select class="filter-select cfg-ua" data-k="${f.k}">${UA_PRESETS.map(u => `<option value="${esc(u.value)}">${u.label}</option>`).join('')}</select>`;
-    else if (f.type === 'select') input = `<select class="filter-select" data-k="${f.k}">${f.options.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}</select>`;
+    else if (f.type === 'ua') input = `<select class="filter-select cfg-ua" data-k="${f.k}">${UA_PRESETS.map(u => `<option value="${esc(u.value)}">${esc(t(u.label))}</option>`).join('')}</select>`;
+    else if (f.type === 'select') input = `<select class="filter-select" data-k="${f.k}">${f.options.map(o => `<option value="${o.value}">${esc(t(o.label))}</option>`).join('')}</select>`;
     else if (f.type === 'headers' || f.type === 'rules') input = `<textarea class="wizard-input mono cfg-area" rows="3" data-k="${f.k}"></textarea>`;
     else if (f.type === 'urls') input = `<textarea class="wizard-input mono cfg-area" rows="8" data-k="${f.k}" placeholder="https://example.com/page-1&#10;https://example.com/page-2"></textarea>`;
     else input = `<input type="text" class="wizard-input cfg-text" data-k="${f.k}">`;
     const wide = ['headers', 'rules', 'urls', 'text'].includes(f.type) ? ' cfg-row-wide' : '';
     const help = HELP[f.k]
-      ? ` <button type="button" class="help" aria-label="Help" tabindex="0">?<span class="help-tip">${esc(HELP[f.k])}</span></button>`
+      ? ` <button type="button" class="help" aria-label="Help" tabindex="0">?<span class="help-tip">${esc(t(HELP[f.k]))}</span></button>`
       : '';
     return `<div class="settings-row${wide}">
-      <label>${f.label}${help}${planned}${f.hint ? ` <span class="cfg-hint">${f.hint}</span>` : ''}</label>
+      <label>${esc(t(f.label))}${help}${planned}${f.hint ? ` <span class="cfg-hint">${esc(t(f.hint))}</span>` : ''}</label>
       ${input}
     </div>`;
   }
 
   render() {
-    const tabBar = TABS.map(t =>
-      `<button class="cfg-tab${t.id === this.activeTab ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('');
-    const panels = TABS.map(t => `
-      <div class="cfg-panel${t.id === this.activeTab ? ' active' : ''}" data-panel="${t.id}">
-        ${t.groups.map(g => `
+    const tabBar = TABS.map(tab =>
+      `<button class="cfg-tab${tab.id === this.activeTab ? ' active' : ''}" data-tab="${tab.id}">${esc(t(tab.label))}</button>`).join('');
+    const panels = TABS.map(tab => `
+      <div class="cfg-panel${tab.id === this.activeTab ? ' active' : ''}" data-panel="${tab.id}">
+        ${tab.groups.map(g => `
           <div class="card cfg-group">
-            <h3>${g.group}</h3>
+            <h3>${esc(t(g.group))}</h3>
             <div class="cfg-fields">${g.items.map(f => this._field(f)).join('')}</div>
           </div>`).join('')}
       </div>`).join('');
@@ -441,6 +442,7 @@ export class ConfigPanel {
       <div class="cfg-tabs">${tabBar}</div>
       <div class="cfg-panels">${panels}</div>`;
 
+    localize(this.container);
     const $ = (s) => this.container.querySelector(s);
     $('#cfg-profile').addEventListener('change', (e) => {
       this.currentId = parseInt(e.target.value, 10);
@@ -472,8 +474,8 @@ export class ConfigPanel {
     catch { this.presets = {}; }
     const sel = this.container.querySelector('#cfg-tech');
     if (!sel) return;
-    sel.innerHTML = '<option value=""> - choose a stack / CMS - </option>' +
-      Object.entries(this.presets).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+    sel.innerHTML = `<option value="">${esc(t('- choose a stack / CMS -'))}</option>` +
+      Object.entries(this.presets).map(([k, v]) => `<option value="${k}">${esc(t(v.label))}</option>`).join('');
   }
 
   _syncSubcat() {
@@ -482,15 +484,15 @@ export class ConfigPanel {
     const subs = (this.presets?.[tech]?.subcategories) || {};
     const keys = Object.keys(subs);
     if (keys.length) {
-      sub.innerHTML = '<option value=""> - type (optional) - </option>' +
-        keys.map(k => `<option value="${k}">${subs[k]}</option>`).join('');
+      sub.innerHTML = `<option value="">${esc(t('- type (optional) -'))}</option>` +
+        keys.map(k => `<option value="${k}">${esc(t(subs[k]))}</option>`).join('');
       sub.style.display = '';
     } else { sub.style.display = 'none'; sub.innerHTML = ''; }
   }
 
   async _applyPreset() {
     const tech = this.container.querySelector('#cfg-tech').value;
-    if (!tech) { toast.show('Choose a tech stack first.', 'error'); return; }
+    if (!tech) { toast.show(t('Choose a tech stack first.'), 'error'); return; }
     const subcat = this.container.querySelector('#cfg-subcat').value || '';
     try {
       const d = await (await fetch(`${this.apiBase}/presets/${tech}?subcategory=${encodeURIComponent(subcat)}`)).json();
@@ -499,9 +501,12 @@ export class ConfigPanel {
       if (d.exclude_patterns != null) setV('exclude_patterns', d.exclude_patterns);
       if (d.js_render != null) setC('js_render', d.js_render);
       this.container.querySelector('#cfg-preset-note').textContent =
-        `Applied - excludes ${(d.exclude_patterns || '').split(',').filter(Boolean).length} pattern(s), JS render ${d.js_render ? 'on' : 'off'}. Review the Spider/Rendering tabs & Save As a profile.`;
-      toast.show('Preset applied to the fields - Save As a profile to keep it.', 'success');
-    } catch { toast.show('Could not load preset.', 'error'); }
+        t('Applied - excludes {count} pattern(s), JS render {render}. Review the Spider/Rendering tabs & Save As a profile.', {
+          count: (d.exclude_patterns || '').split(',').filter(Boolean).length,
+          render: t(d.js_render ? 'on' : 'off'),
+        });
+      toast.show(t('Preset applied to the fields - Save As a profile to keep it.'), 'success');
+    } catch { toast.show(t('Could not load preset.'), 'error'); }
   }
 
   _addExtractorRow(item = {}) {
@@ -518,6 +523,7 @@ export class ConfigPanel {
       <input class="wizard-input cx-expr mono" placeholder="selector or regex" value="${esc(item.expr || '')}">
       <input class="wizard-input cx-attr" placeholder="attr (css)" value="${esc(item.attr || '')}" style="width:80px;">
       <button class="btn btn-link cx-del" title="Remove">✕</button>`;
+    localize(row);
     row.querySelector('.cx-del').addEventListener('click', () => row.remove());
     box.appendChild(row);
   }
@@ -531,6 +537,7 @@ export class ConfigPanel {
       <input class="wizard-input sg-pattern mono" placeholder="URL regex - e.g. ^https://ex\\.com/blog/" value="${esc(item.pattern || '')}">
       <button class="btn btn-link sg-up" title="Move up (higher priority)">↑</button>
       <button class="btn btn-link sg-del" title="Remove">✕</button>`;
+    localize(row);
     row.querySelector('.sg-del').addEventListener('click', () => row.remove());
     row.querySelector('.sg-up').addEventListener('click', () => {
       const prev = row.previousElementSibling;
@@ -556,6 +563,7 @@ export class ConfigPanel {
       <input class="wizard-input cs-name" placeholder="name" value="${esc(item.name || '')}">
       <input class="wizard-input cs-regex mono" placeholder="regex" value="${esc(item.regex || '')}">
       <button class="btn btn-link cs-del" title="Remove">✕</button>`;
+    localize(row);
     row.querySelector('.cs-del').addEventListener('click', () => row.remove());
     box.appendChild(row);
   }

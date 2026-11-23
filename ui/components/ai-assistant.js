@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 // ai-assistant.js — a floating, minimally-intrusive analyst scoped to the
 // active audit. It streams responses from /api/ai/chat (SSE) and only ever
 // reasons over the current crawl's data or how to use Scrawly (the scope guard
@@ -25,9 +26,9 @@ function mdToHtml(text) {
 }
 
 const SUGGESTIONS = [
-  'Summarize this audit',
-  'What should I fix first?',
-  'Explain the health score',
+  t("Summarize this audit"),
+  t("What should I fix first?"),
+  t("Explain the health score"),
 ];
 
 const ICON_SPARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.8L18.7 9.6l-4.8 1.9L12 16.3l-1.9-4.8L5.3 9.6l4.8-1.9L12 3z"></path></svg>';
@@ -57,34 +58,34 @@ export class AiAssistant {
     const root = document.createElement('div');
     root.className = 'ai-root';
     root.innerHTML = `
-      <button class="ai-fab" aria-label="Ask the audit analyst" title="Ask AI about this audit">
+      <button class="ai-fab" aria-label="${t("Ask the audit analyst")}" title="${t("Ask AI about this audit")}">
         ${ICON_SPARK}
       </button>
 
-      <button class="ai-dock" aria-label="Reopen audit analyst" title="Reopen">
+      <button class="ai-dock" aria-label="${t("Reopen audit analyst")}" title="${t("Reopen")}">
         <span class="ai-dock-icon">${ICON_SPARK}</span>
-        <span class="ai-dock-name">Audit Analyst</span>
+        <span class="ai-dock-name">${t("Audit Analyst")}</span>
         <span class="ai-dock-caret">${ICON_UP}</span>
       </button>
 
-      <section class="ai-panel" role="dialog" aria-label="Audit AI assistant">
+      <section class="ai-panel" role="dialog" aria-label="${t("Audit AI assistant")}">
         <header class="ai-head">
           <div class="ai-head-title">
             <span class="ai-head-icon">${ICON_SPARK}</span>
             <div class="ai-head-meta">
-              <div class="ai-head-name">Audit Analyst</div>
+              <div class="ai-head-name">${t("Audit Analyst")}</div>
               <div class="ai-head-ctx" data-ctx></div>
             </div>
           </div>
           <div class="ai-head-actions">
-            <button class="ai-min icon-btn" aria-label="Minimize" title="Minimize">${ICON_MIN}</button>
-            <button class="ai-close icon-btn" aria-label="Close" title="Close">${ICON_CLOSE}</button>
+            <button class="ai-min icon-btn" aria-label="${t("Minimize")}" title="${t("Minimize")}">${ICON_MIN}</button>
+            <button class="ai-close icon-btn" aria-label="${t("Close")}" title="${t("Close")}">${ICON_CLOSE}</button>
           </div>
         </header>
         <div class="ai-msgs" data-msgs></div>
         <form class="ai-input">
-          <textarea data-in rows="1" placeholder="Ask about this audit…" aria-label="Message"></textarea>
-          <button type="submit" class="ai-send" aria-label="Send" disabled>${ICON_SEND}</button>
+          <textarea data-in rows="1" placeholder="${t("Ask about this audit…")}" aria-label="${t("Message")}"></textarea>
+          <button type="submit" class="ai-send" aria-label="${t("Send")}" disabled>${ICON_SEND}</button>
         </form>
       </section>`;
     document.body.appendChild(root);
@@ -145,7 +146,7 @@ export class AiAssistant {
 
   _updateContext() {
     const { label } = this.getContext();
-    this.ctxEl.textContent = label ? `Analyzing: ${label}` : 'No audit loaded - open a project first';
+    this.ctxEl.textContent = label ? t("Analyzing: {label}", { label }) : t("No audit loaded - open a project first");
   }
 
   /** Repaint the context line — call when the active crawl changes so an
@@ -201,8 +202,8 @@ export class AiAssistant {
     this.msgsEl.innerHTML = `
       <div class="ai-welcome">
         <div class="ai-welcome-icon">${ICON_SPARK}</div>
-        <p class="ai-welcome-lead">Ask me about the current audit.</p>
-        <p class="ai-welcome-sub">I read this crawl's pages, issues and metrics - and I can explain how to use Scrawly.</p>
+        <p class="ai-welcome-lead">${t("Ask me about the current audit.")}</p>
+        <p class="ai-welcome-sub">${t("I read this crawl's pages, issues and metrics - and I can explain how to use Scrawly.")}</p>
         <div class="ai-suggest">
           ${SUGGESTIONS.map((s) => `<button type="button" class="ai-chip" data-suggest="${esc(s)}">${esc(s)}</button>`).join('')}
         </div>
@@ -249,7 +250,7 @@ export class AiAssistant {
       if (acc.trim()) {
         this.messages.push({ role: 'assistant', content: acc });
       } else {
-        botEl.innerHTML = '<span class="ai-muted">No response.</span>';
+        botEl.innerHTML = `<span class="ai-muted">${t("No response.")}</span>`;
       }
     } catch (err) {
       this._renderError(botEl, String(err && err.message ? err.message : err));
@@ -267,7 +268,7 @@ export class AiAssistant {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'ai-chip';
-      b.textContent = 'Open AI settings';
+      b.textContent = t("Open AI settings");
       b.addEventListener('click', () => { this.close(); this.onOpenSettings(); });
       el.querySelector('.ai-error').appendChild(b);
     }
@@ -281,7 +282,7 @@ export class AiAssistant {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ crawl_id: crawlId, messages }),
     });
-    if (!res.ok || !res.body) throw new Error(`Request failed (${res.status})`);
+    if (!res.ok || !res.body) throw new Error(t("Request failed ({status})", { status: res.status }));
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
