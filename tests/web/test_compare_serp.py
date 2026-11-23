@@ -2,6 +2,9 @@
 from types import SimpleNamespace
 from typing import Any
 
+import httpx
+import pytest
+import respx
 from fastapi.testclient import TestClient
 
 from sentinelseo.web.api import _serp_row, _url_diff, app
@@ -169,3 +172,70 @@ def test_serp_generate_full_flow(monkeypatch: Any) -> None:
     assert row["ai_generated"] is True
     assert row["desc_ai_thin"] is False   # the generated description is detailed
     assert row["title_px"] > 0            # measured
+
+
+def test_batch_description_uses_page_language_and_preserves_title(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sentinelseo.ai import provider
+    from sentinelseo.web import api
+
+    monkeypatch.setattr(api, "_ai_config", lambda: {})
+    monkeypatch.setattr(provider, "is_configured", lambda cfg: True)
+
+    def complete(
+        cfg: dict[str, Any], system: str, prompt: str, max_tokens: int
+    ) -> str:
+        assert "Match the page's language" in system
+        assert "Каталог станков" in prompt
+        return '"Каталог токарных станков для мастерских."'
+
+    monkeypatch.setattr(provider, "ai_complete", complete)
+    url = "http://localhost:8080/catalog"
+    with respx.mock:
+        page = respx.get(url).mock(return_value=httpx.Response(
+            200, headers={"Content-Type": "text/html; charset=utf-8"},
+            text="<html><head><title>Станки</title></head><body>Каталог станков</body></html>",
+        ))
+        generated = client.post("/api/serp/description", json={"url": url})
+    assert page.call_count == 1
+    assert generated.status_code == 200, generated.text
+    assert generated.json() == {
+        "url": url, "title": "Станки", "description": "Каталог токарных станков для мастерских.",
+    }
+
+    edited = {**generated.json(), "description": "Обновлённый черновик"}
+    with respx.mock:
+        result = client.post("/api/serp/preview", json={"rows": [edited]})
+    assert result.status_code == 200
+    assert result.json()["rows"][0]["description"] == "Обновлённый черновик"
+    assert result.json()["rows"][0]["desc_px"] > 0
+
+
+def test_batch_description_rejects_invalid_and_unavailable_pages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sentinelseo.ai import provider
+    from sentinelseo.web import api
+
+    monkeypatch.setattr(api, "_ai_config", lambda: {})
+    monkeypatch.setattr(provider, "is_configured", lambda cfg: True)
+    url = "http://localhost:8080/missing"
+    with respx.mock:
+        invalid = client.post("/api/serp/description", json={"url": "ftp://localhost/catalog"})
+        respx.get(url).mock(return_value=httpx.Response(404, text="<p>Not found</p>"))
+        missing = client.post("/api/serp/description", json={"url": url})
+    assert invalid.json()["detail"] == {"code": "invalid_url"}
+    assert missing.json()["detail"] == {"code": "page_http_error", "status": 404}
+
+
+def test_batch_description_requires_configured_ai(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sentinelseo.ai import provider
+    from sentinelseo.web import api
+
+    monkeypatch.setattr(api, "_ai_config", lambda: {})
+    monkeypatch.setattr(provider, "is_configured", lambda cfg: False)
+    with respx.mock:
+        result = client.post("/api/serp/description", json={"url": "http://localhost:8080/"})
+    assert result.status_code == 400
+    assert result.json()["detail"] == {"code": "ai_unconfigured"}
